@@ -24,21 +24,23 @@ setInterval(tick,1000);tick();
 /* ---------- Validaciones ---------- */
 const RX_NUM=/^\d{2}-\d{5}$/;
 const RX_CURP=/^[A-Z][AEIOUX][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d$/;
+const carnetN=v=>/^dup/i.test(String(v||''))?'Duplicado':/^(ent|s)/i.test(String(v||''))?'Entregado':'Ninguno';
 const edad=f=>{if(!f)return'';const n=new Date(f+'T00:00'),h=new Date();let a=h.getFullYear()-n.getFullYear();if(h<new Date(h.getFullYear(),n.getMonth(),n.getDate()))a--;return a};
 function validar(d){
  if(!RX_NUM.test(d.numero))return'El número de expediente debe tener el formato XX-XXXXX.';
  if(!d.nombre)return'Escribe el nombre del paciente.';
  if(!d.fechaNacimiento)return'Indica la fecha de nacimiento.';
  if(!['Masculino','Femenino'].includes(d.sexo))return'El sexo debe ser Masculino o Femenino.';
- if(!RX_CURP.test(d.curp))return'La CURP no tiene un formato válido.';
- if(d.curp.slice(4,10)!==d.fechaNacimiento.slice(2).replace(/-/g,''))return'La fecha de nacimiento no coincide con la CURP.';
- if(d.curp[10]!==(d.sexo==='Masculino'?'H':'M'))return'El sexo no coincide con la CURP.';
+ if(d.curp&&!RX_CURP.test(d.curp))return'La CURP no tiene un formato válido.';
+ if(d.curp&&d.curp.slice(4,10)!==d.fechaNacimiento.slice(2).replace(/-/g,''))return'La fecha de nacimiento no coincide con la CURP.';
+ if(d.curp&&d.curp[10]!==(d.sexo==='Masculino'?'H':'M'))return'El sexo no coincide con la CURP.';
  if(!d.domicilio)return'Escribe el domicilio.';
  if(!/^\d{10}$/.test(d.telefono))return'El número de contacto debe tener 10 dígitos.';
  return null}
 function limpiar(d){d.nombre=String(d.nombre||'').trim().toUpperCase();d.curp=String(d.curp||'').trim().toUpperCase();d.telefono=String(d.telefono||'').replace(/\D/g,'');
  d.numero=String(d.numero||'').trim();d.domicilio=String(d.domicilio||'').trim();d.nombreLower=d.nombre.toLowerCase();d.edad=edad(d.fechaNacimiento);
- for(const k of['carnet','codigoMater'])d[k]=/^s/i.test(String(d[k]||'No'))?'Sí':'No';
+ d.codigoMater=/^s/i.test(String(d.codigoMater||''))?'Sí':'No';d.defuncion=/^s/i.test(String(d.defuncion||''))?'Sí':'No';d.carnet=carnetN(d.carnet);
+ let c=String(d.caso||'').trim().toUpperCase();if(c==='46')c='046';d.caso=['046','Z21','ILE'].includes(c)?c:'';
  d.casoCodigo=d.codigoMater==='Sí'?String(d.casoCodigo||'').trim():'';return d}
 
 /* ---------- Estado activo / pasivo (5 años sin movimiento) ---------- */
@@ -66,18 +68,18 @@ async function buscar(e){e&&e.preventDefault();const t=$('#q').value.trim(),C=db
  else if(/^[A-Za-z]{4}\d{6}/.test(t))q=C.where('curp','==',t.toUpperCase());
  else{const l=t.toLowerCase();q=C.orderBy('nombreLower').startAt(l).endAt(l+'\uf8ff')}
  try{const s=await q.limit(50).get();lista=s.docs.map(d=>d.data());
-  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${edad(x.fechaNacimiento)}<td>${ultimo(x)||'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>`).join(''):'<tr><td colspan="6" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
- catch(err){$('#rows').innerHTML='<tr><td colspan="6" class="vacio">'+esc(err.message)}}
+  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${edad(x.fechaNacimiento)}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="7" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
+ catch(err){$('#rows').innerHTML='<tr><td colspan="7" class="vacio">'+esc(err.message)}}
 $('#busq').onsubmit=buscar;
 $('#rows').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(tr)abrir(lista[tr.dataset.i])};
 
 /* ---------- Formulario de expediente ---------- */
 const F=$('#expForm');
-F.curp.oninput=()=>{F.curp.value=F.curp.value.toUpperCase();F.curp.setCustomValidity(RX_CURP.test(F.curp.value)?'':'La CURP no tiene un formato válido.')};
+F.curp.oninput=()=>{F.curp.value=F.curp.value.toUpperCase();F.curp.setCustomValidity((!F.curp.value||RX_CURP.test(F.curp.value))?'':'La CURP no tiene un formato válido.')};
 F.fechaNacimiento.oninput=()=>$('#edadV').value=F.fechaNacimiento.value?edad(F.fechaNacimiento.value)+' años':'';
 F.codigoMater.onchange=()=>$('#caso').hidden=F.codigoMater.value!=='Sí';
 function abrir(x){editando=x||null;F.reset();if(x)for(const[k,v]of Object.entries(x))if(F.elements[k]&&typeof v==='string')F.elements[k].value=v;
- F.numero.readOnly=!!x;F.curp.oninput();F.fechaNacimiento.oninput();F.codigoMater.onchange();$('#fmsg').textContent='';tick();
+ F.carnet.value=carnetN(x&&x.carnet);F.numero.readOnly=!!x;F.curp.oninput();F.fechaNacimiento.oninput();F.codigoMater.onchange();$('#fmsg').textContent='';tick();
  $('#dlgT').textContent=x?'Editar expediente':'Nuevo expediente';$('#dlg').showModal()}
 $('#nuevo').onclick=()=>abrir();$('#cerrar').onclick=()=>$('#dlg').close();
 F.onsubmit=async e=>{e.preventDefault();const d=limpiar(Object.fromEntries(new FormData(F))),er=validar(d);if(er)return $('#fmsg').textContent=er;
@@ -88,7 +90,7 @@ F.onsubmit=async e=>{e.preventDefault();const d=limpiar(Object.fromEntries(new F
 
 /* ---------- Importar Excel / CSV ---------- */
 const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
-const MAP={numerodeexpediente:'numero',expediente:'numero',numero:'numero',nombre:'nombre',paciente:'nombre',nombredelpaciente:'nombre',fechadenacimiento:'fechaNacimiento',domicilio:'domicilio',fechademovimiento:'fechaMovimiento',fechadeingreso:'fechaIngreso',fechadeegreso:'fechaEgreso',curp:'curp',carnet:'carnet',carnetdecitas:'carnet',telefono:'telefono',numerodecontacto:'telefono',contacto:'telefono',sexo:'sexo',codigomater:'codigoMater',numerodecaso:'casoCodigo',casocodigo:'casoCodigo'};
+const MAP={numerodeexpediente:'numero',expediente:'numero',numero:'numero',nombre:'nombre',paciente:'nombre',nombredelpaciente:'nombre',fechadenacimiento:'fechaNacimiento',domicilio:'domicilio',fechademovimiento:'fechaMovimiento',fechadeingreso:'fechaIngreso',fechadeegreso:'fechaEgreso',curp:'curp',carnet:'carnet',carnetdecitas:'carnet',telefono:'telefono',numerodecontacto:'telefono',contacto:'telefono',sexo:'sexo',codigomater:'codigoMater',numerodecaso:'casoCodigo',casocodigo:'casoCodigo',caso:'caso',defuncion:'defuncion'};
 function iso(v){if(!v)return'';if(v instanceof Date){const d=new Date(v.getTime()+432e5);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
  const s=String(v).trim(),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:s.slice(0,10)}
 $('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;const out=$('#res');out.hidden=false;out.textContent='Importando…';

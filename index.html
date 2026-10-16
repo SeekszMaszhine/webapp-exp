@@ -28,7 +28,7 @@
 <div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
 <div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><label class="btn ghost">Importar Excel<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnSol" hidden>Solicitudes</button></div></div>
 <pre id="res" hidden></pre>
-<div class="tw"><table><thead><tr><th>Número<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Estado</thead><tbody id="rows"></tbody></table></div>
+<div class="tw"><table><thead><tr><th>Número<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Caso<th>Estado</thead><tbody id="rows"></tbody></table></div>
 <p class="hint">Para importar desde Access, expórtalo primero a Excel o CSV.</p></main></section>
 
 <dialog id="dlg"><form id="expForm"><h2 id="dlgT"></h2><div class="grid">
@@ -38,10 +38,12 @@
 <label>Fecha de nacimiento<input name="fechaNacimiento" type="date" required></label>
 <label>Edad<input id="edadV" readonly></label>
 <label>Sexo<select name="sexo" required><option value="">Selecciona</option><option>Masculino</option><option>Femenino</option></select></label>
-<label>CURP<input name="curp" maxlength="18" required></label>
+<label>CURP (opcional)<input name="curp" maxlength="18"></label>
 <label class="w2">Domicilio<input name="domicilio" required></label>
 <label>Número de contacto<input name="telefono" type="tel" required></label>
-<label>Carnet de citas<select name="carnet"><option>Sí</option><option>No</option></select></label>
+<label>Carnet de citas<select name="carnet"><option>Ninguno</option><option>Entregado</option><option>Duplicado</option></select></label>
+<label>Caso (opcional)<select name="caso"><option value="">Sin caso</option><option>046</option><option>Z21</option><option>ILE</option></select></label>
+<label>Defunción<select name="defuncion"><option>No</option><option>Sí</option></select></label>
 <label>Fecha de ingreso<input name="fechaIngreso" type="date"></label>
 <label>Fecha de egreso<input name="fechaEgreso" type="date"></label>
 <label>Fecha de movimiento<input name="fechaMovimiento" type="date"></label>
