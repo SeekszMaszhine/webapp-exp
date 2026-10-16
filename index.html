@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expediente Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css"></head><body>
+
+<section id="landing" class="view">
+<header class="nav"><b class="logo">HMI VG | EXP-ONLINE</b><button class="btn ghost" data-go="auth">Ingresar</button></header>
+<main class="hero"><div><h1>El expediente de cada paciente, completo y siempre a la mano.</h1>
+<p>Captura, busca y actualiza expedientes clínicos desde cualquier equipo. Los datos viven en la nube y cada apertura queda registrada al segundo.</p>
+<button class="btn" data-go="auth">Acceso para capturistas</button></div>
+<div class="stamp"><small>Apertura de expediente</small><strong id="reloj"></strong><span>Fecha y hora automáticas, no editables</span></div></main>
+<footer>2026 HIM VG | BASE ONLINE | DEBELOPED BY SEPHYROTH</footer></section>
+
+<section id="auth" class="view" hidden>
+<div class="card"><b class="logo">Expediente Digital</b>
+<div id="pend" hidden><h2>Cuenta en revisión</h2><p>Un administrador debe aprobar tu registro antes de que puedas capturar expedientes.</p><button class="btn ghost salir">Cerrar sesión</button></div>
+<form id="authForm"><div class="tabs"><button type="button" class="tab on" data-m="login">Ingresar</button><button type="button" class="tab" data-m="reg">Registrarme</button></div>
+<label>Correo<input id="email" type="email" required autocomplete="email"></label>
+<label>Contraseña<input id="pw" type="password" minlength="6" required autocomplete="current-password"></label>
+<p id="amsg" class="err"></p><button class="btn" id="authBtn">Ingresar</button></form>
+<button class="link" data-go="landing">Volver al inicio</button></div></section>
+
+<section id="app" class="view" hidden>
+<header class="nav"><b class="logo">Expediente Digital</b><div class="who"><span id="quien"></span><button class="btn ghost sm salir">Salir</button></div></header>
+<main class="wrap">
+<div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
+<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><label class="btn ghost">Importar Excel<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnSol" hidden>Solicitudes</button></div></div>
+<pre id="res" hidden></pre>
+<div class="tw"><table><thead><tr><th>Número<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Estado</thead><tbody id="rows"></tbody></table></div>
+<p class="hint">Para importar desde Access, expórtalo primero a Excel o CSV.</p></main></section>
+
+<dialog id="dlg"><form id="expForm"><h2 id="dlgT"></h2><div class="grid">
+<label>Número de expediente<input name="numero" placeholder="XX-XXXXX" pattern="\d{2}-\d{5}" required></label>
+<label>Apertura (automática)<input id="apertura" readonly></label>
+<label class="w2">Nombre del paciente<input name="nombre" required></label>
+<label>Fecha de nacimiento<input name="fechaNacimiento" type="date" required></label>
+<label>Edad<input id="edadV" readonly></label>
+<label>Sexo<select name="sexo" required><option value="">Selecciona</option><option>Masculino</option><option>Femenino</option></select></label>
+<label>CURP<input name="curp" maxlength="18" required></label>
+<label class="w2">Domicilio<input name="domicilio" required></label>
+<label>Número de contacto<input name="telefono" type="tel" required></label>
+<label>Carnet de citas<select name="carnet"><option>Sí</option><option>No</option></select></label>
+<label>Fecha de ingreso<input name="fechaIngreso" type="date"></label>
+<label>Fecha de egreso<input name="fechaEgreso" type="date"></label>
+<label>Fecha de movimiento<input name="fechaMovimiento" type="date"></label>
+<label>Código mater<select name="codigoMater"><option>No</option><option>Sí</option></select></label>
+<label id="caso" hidden>Número de caso (opcional)<input name="casoCodigo"></label>
+</div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
+<dialog id="dlgS"><h2>Solicitudes de acceso</h2><div id="solList"></div><div class="end"><button class="btn ghost" onclick="this.closest('dialog').close()">Cerrar</button></div></dialog>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="app.js"></script></body></html>
