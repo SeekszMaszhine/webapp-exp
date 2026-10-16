@@ -68,8 +68,8 @@ async function buscar(e){e&&e.preventDefault();const t=$('#q').value.trim(),C=db
  else if(/^[A-Za-z]{4}\d{6}/.test(t))q=C.where('curp','==',t.toUpperCase());
  else{const l=t.toLowerCase();q=C.orderBy('nombreLower').startAt(l).endAt(l+'\uf8ff')}
  try{const s=await q.limit(50).get();lista=s.docs.map(d=>d.data());
-  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${edad(x.fechaNacimiento)}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="7" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
- catch(err){$('#rows').innerHTML='<tr><td colspan="7" class="vacio">'+esc(err.message)}}
+  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${edad(x.fechaNacimiento)}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td>${x.codigoMater==='Sí'?esc(x.casoCodigo||'Sí'):'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="8" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
+ catch(err){$('#rows').innerHTML='<tr><td colspan="8" class="vacio">'+esc(err.message)}}
 $('#busq').onsubmit=buscar;
 $('#rows').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(tr)abrir(lista[tr.dataset.i])};
 
