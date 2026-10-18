@@ -10,10 +10,12 @@
 };
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
+const VERSION='20261018c';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const show=id=>$$('.view').forEach(v=>v.hidden=v.id!==id);
 $$('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+$('#ver').textContent='Versión del sitio: '+VERSION;
 let editando=null,lista=[],seccion='EXP-GN',modo='login',perfil=null,unsub=null;
 const esAdmin=()=>!!perfil&&perfil.rol==='admin';
 
@@ -49,7 +51,9 @@ function limpiar(d){d.nombre=String(d.nombre||'').trim().toUpperCase();d.curp=St
  d.tipo=/est/i.test(String(d.tipo||''))?'EXP-EST':'EXP-GN';
  d.codigoMater=/^s[ií]$/i.test(String(d.codigoMater||'').trim())?'Sí':'No';d.codigoDefuncion=String(d.codigoDefuncion??'').trim();d.defuncion=/^(s|x|1)/i.test(String(d.defuncion||''))?'Sí':'No';d.carnet=carnetN(d.carnet);
  let c=String(d.caso||'').trim().toUpperCase();if(c==='46')c='046';d.caso=['046','Z21','ILE','CML'].includes(c)?c:'';
- d.casoCodigo=d.codigoMater==='Sí'?String(d.casoCodigo??'').trim():'';return d}
+ d.casoCodigo=d.codigoMater==='Sí'?String(d.casoCodigo??'').trim():'';
+ if(d.tipo==='EXP-EST'){d.codigoMater='No';d.casoCodigo='';d.defuncion='No';d.codigoDefuncion='';d.fechaIngreso='';d.fechaEgreso='';if(d.caso!=='Z21')d.caso=''}
+ return d}
 
 /* ---------- Estado activo / pasivo (5 años sin movimiento) ---------- */
 const ultimo=x=>[x.fechaMovimiento,x.fechaIngreso,x.fechaEgreso].filter(Boolean).sort().pop()||(x.fechaApertura?x.fechaApertura.toDate().toISOString().slice(0,10):'');
@@ -76,10 +80,10 @@ async function buscar(e){e&&e.preventDefault();const t=$('#q').value.trim(),C=db
  else if(/^[A-Za-z]{4}\d{6}/.test(t))q=C.where('curp','==',t.toUpperCase());
  else{const l=t.toLowerCase();q=C.orderBy('nombreLower').startAt(l).endAt(l+'\uf8ff')}
  try{const s=await q.limit(300).get();lista=s.docs.map(d=>d.data()).filter(x=>(x.tipo||'EXP-GN')===seccion).slice(0,50);
-  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td><span class="tag t${x.tipo==='EXP-EST'?' e':''}">${esc(x.tipo||'EXP-GN')}</span><td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${esc(edadDe(x))}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td>${x.codigoMater==='Sí'?esc(x.casoCodigo||'Sí'):'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="9" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
+  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td><span class="tag t${x.tipo==='EXP-EST'?' e':''}">${esc(x.tipo||'EXP-GN')}</span><td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${esc(edadDe(x))}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td class="cm">${x.codigoMater==='Sí'?esc(x.casoCodigo||'Sí'):'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="9" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
  catch(err){$('#rows').innerHTML='<tr><td colspan="8" class="vacio">'+esc(err.message)}}
 $('#busq').onsubmit=buscar;
-function irA(t){seccion=t;$$('.stab').forEach(b=>b.classList.toggle('on',b.dataset.s===t));buscar()}
+function irA(t){seccion=t;$('.tw').classList.toggle('est',t==='EXP-EST');$$('.stab').forEach(b=>b.classList.toggle('on',b.dataset.s===t));buscar()}
 $$('.stab').forEach(b=>b.onclick=()=>irA(b.dataset.s));
 $('#rows').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(tr)abrir(lista[tr.dataset.i])};
 
@@ -87,10 +91,13 @@ $('#rows').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(tr)abrir(lista
 const F=$('#expForm');
 F.curp.oninput=()=>{F.curp.value=F.curp.value.toUpperCase();F.curp.setCustomValidity((!F.curp.value||RX_CURP.test(F.curp.value))?'':'La CURP no tiene un formato válido.')};
 F.fechaNacimiento.oninput=()=>$('#edadV').value=F.fechaNacimiento.value?edad(F.fechaNacimiento.value)+' años':'';
-F.codigoMater.onchange=()=>$('#caso').hidden=F.codigoMater.value!=='Sí';
+F.codigoMater.onchange=()=>$('#caso').hidden=F.tipo.value==='EXP-EST'||F.codigoMater.value!=='Sí';
+function aplicarTipo(){const est=F.tipo.value==='EXP-EST',C=F.elements.caso;$$('.gn').forEach(l=>l.hidden=est);F.codigoMater.onchange();
+ [...C.options].forEach(o=>{const no=est&&o.value&&o.value!=='Z21';o.hidden=o.disabled=!!no});if(est&&C.value&&C.value!=='Z21')C.value=''}
+F.tipo.onchange=aplicarTipo;
 function abrir(x){editando=x||null;F.reset();if(x)for(const[k,v]of Object.entries(x))if(F.elements[k]&&typeof v==='string')F.elements[k].value=v;
  F.carnet.value=carnetN(x&&x.carnet);F.tipo.value=x?(x.tipo||'EXP-GN'):seccion;F.numero.readOnly=!!x&&!esAdmin();const A=$('#apertura'),ed=!!x&&esAdmin()&&!!x.fechaApertura;A.readOnly=!ed;A.type=ed?'datetime-local':'text';A.step=1;
- if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();F.codigoMater.onchange();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent='';tick();
+ if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();aplicarTipo();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent='';tick();
  $('#dlgT').textContent=x?'Editar expediente':'Nuevo expediente';$('#dlg').showModal()}
 $('#nuevo').onclick=()=>abrir();$('#cerrar').onclick=()=>$('#dlg').close();
 F.onsubmit=async e=>{e.preventDefault();const d=limpiar(Object.fromEntries(new FormData(F)));if(editando&&!d.fechaNacimiento&&editando.edad)d.edad=editando.edad;const er=validar(d,!editando);if(er)return $('#fmsg').textContent=er;
