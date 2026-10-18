@@ -10,7 +10,7 @@
 };
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261018d';
+const VERSION='20261018e';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const show=id=>$$('.view').forEach(v=>v.hidden=v.id!==id);
@@ -74,18 +74,23 @@ auth.onAuthStateChanged(u=>{unsub&&unsub();
   else{show('auth');$('#authForm').hidden=true;$('#pend').hidden=false}})});
 
 /* ---------- Búsqueda ---------- */
-async function buscar(e){e&&e.preventDefault();const t=$('#q').value.trim(),C=db.collection('expedientes');let q;
- if(!t)q=C.orderBy('fechaApertura','desc');
- else if(/^[\d-]+$/.test(t))q=C.orderBy(firebase.firestore.FieldPath.documentId()).startAt(t).endAt(t+'\uf8ff');
- else if(/^[A-Za-z]{4}\d{6}/.test(t))q=C.where('curp','==',t.toUpperCase());
- else{const l=t.toLowerCase();q=C.orderBy('nombreLower').startAt(l).endAt(l+'\uf8ff')}
- try{const s=await q.limit(300).get();lista=s.docs.map(d=>d.data()).filter(x=>(x.tipo||'EXP-GN')===seccion).slice(0,50);
+async function buscar(e){e&&e.preventDefault();const t=$('#q').value.trim(),C=db.collection('expedientes'),con=s=>s.docs.map(d=>({...d.data(),_id:d.id}));
+ try{if(!t){const B=C.where('tipo','==',seccion);let s;try{s=await B.orderBy('fechaApertura','desc').limit(50).get()}catch(err){if(err.code!=='failed-precondition')throw err;s=await B.limit(50).get()}lista=con(s)}
+  else{let q;if(/^[\d-]+$/.test(t))q=C.orderBy('numero').startAt(t).endAt(t+'\uf8ff');
+   else if(/^[A-Za-z]{4}\d{6}/.test(t))q=C.where('curp','==',t.toUpperCase());
+   else{const l=t.toLowerCase();q=C.orderBy('nombreLower').startAt(l).endAt(l+'\uf8ff')}
+   lista=con(await q.limit(300).get()).filter(x=>(x.tipo||'EXP-GN')===seccion).slice(0,50)}
   $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td><span class="tag t${x.tipo==='EXP-EST'?' e':''}">${esc(x.tipo||'EXP-GN')}</span><td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${esc(edadDe(x))}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td class="cm">${x.codigoMater==='Sí'?esc(x.casoCodigo||'Sí'):'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="9" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
- catch(err){$('#rows').innerHTML='<tr><td colspan="8" class="vacio">'+esc(err.message)}}
+ catch(err){$('#rows').innerHTML='<tr><td colspan="9" class="vacio">'+esc(err.message)}}
 $('#busq').onsubmit=buscar;
 function irA(t){seccion=t;$('.tw').classList.toggle('est',t==='EXP-EST');$$('.stab').forEach(b=>b.classList.toggle('on',b.dataset.s===t));buscar()}
 $$('.stab').forEach(b=>b.onclick=()=>irA(b.dataset.s));
 $('#rows').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(tr)abrir(lista[tr.dataset.i])};
+
+/* ---------- Número único por sección ---------- */
+const docId=(t,n)=>t+'_'+n;
+async function existe(t,n){const C=db.collection('expedientes');if((await C.doc(docId(t,n)).get()).exists)return true;
+ const v=await C.doc(n).get();return v.exists&&(v.data().tipo||'EXP-GN')===t}
 
 /* ---------- Formulario de expediente ---------- */
 const F=$('#expForm');
@@ -96,18 +101,19 @@ function aplicarTipo(){const est=F.tipo.value==='EXP-EST',C=F.elements.caso;$$('
  [...C.options].forEach(o=>{const no=est&&o.value&&o.value!=='Z21';o.hidden=o.disabled=!!no});if(est&&C.value&&C.value!=='Z21')C.value=''}
 F.tipo.onchange=aplicarTipo;
 function abrir(x){editando=x||null;F.reset();if(x)for(const[k,v]of Object.entries(x))if(F.elements[k]&&typeof v==='string')F.elements[k].value=v;
- F.carnet.value=carnetN(x&&x.carnet);F.tipo.value=x?(x.tipo||'EXP-GN'):seccion;F.numero.readOnly=!!x&&!esAdmin();const A=$('#apertura'),ed=!!x&&esAdmin()&&!!x.fechaApertura;A.readOnly=!ed;A.type=ed?'datetime-local':'text';A.step=1;
+ F.carnet.value=carnetN(x&&x.carnet);F.tipo.value=x?(x.tipo||'EXP-GN'):seccion;F.tipo.disabled=!!x&&!esAdmin();F.numero.readOnly=!!x&&!esAdmin();const A=$('#apertura'),ed=!!x&&esAdmin()&&!!x.fechaApertura;A.readOnly=!ed;A.type=ed?'datetime-local':'text';A.step=1;
  if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();aplicarTipo();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent='';tick();
  $('#dlgT').textContent=x?'Editar expediente':'Nuevo expediente';$('#dlg').showModal()}
 $('#nuevo').onclick=()=>abrir();$('#cerrar').onclick=()=>$('#dlg').close();
-F.onsubmit=async e=>{e.preventDefault();const d=limpiar(Object.fromEntries(new FormData(F)));if(editando&&!d.fechaNacimiento&&editando.edad)d.edad=editando.edad;const er=validar(d,!editando);if(er)return $('#fmsg').textContent=er;
- const ref=db.doc('expedientes/'+d.numero),yo=auth.currentUser.email;
- try{if(editando){const A=$('#apertura'),data={...d,actualizado:TS(),editor:yo};
+F.onsubmit=async e=>{e.preventDefault();const raw=Object.fromEntries(new FormData(F));if(editando&&!esAdmin())raw.tipo=editando.tipo||'EXP-GN';
+ const d=limpiar(raw);if(editando&&!d.fechaNacimiento&&editando.edad)d.edad=editando.edad;const er=validar(d,!editando);if(er)return $('#fmsg').textContent=er;
+ const yo=auth.currentUser.email,dup='Ya existe un expediente con ese número en la sección '+d.tipo+'.';
+ try{if(editando){const A=$('#apertura'),data={...d,actualizado:TS(),editor:yo},viejo=db.doc('expedientes/'+editando._id);
    if(esAdmin()&&A.type==='datetime-local'&&A.value)data.fechaApertura=firebase.firestore.Timestamp.fromDate(new Date(A.value));
-   if(esAdmin()&&d.numero!==editando.numero){if((await ref.get()).exists)return $('#fmsg').textContent='Ya existe un expediente con ese número.';
-    const b=db.batch();b.set(ref,{...editando,...data});b.delete(db.doc('expedientes/'+editando.numero));await b.commit()}
-   else await ref.update(data)}
-  else{if((await ref.get()).exists)return $('#fmsg').textContent='Ya existe un expediente con ese número.';await ref.set({...d,fechaApertura:TS(),creador:yo})}
+   if(esAdmin()&&(d.numero!==editando.numero||d.tipo!==(editando.tipo||'EXP-GN'))){if(await existe(d.tipo,d.numero))return $('#fmsg').textContent=dup;
+    const{_id,...orig}=editando,b=db.batch();b.set(db.doc('expedientes/'+docId(d.tipo,d.numero)),{...orig,...data});b.delete(viejo);await b.commit()}
+   else await viejo.update(data)}
+  else{if(await existe(d.tipo,d.numero))return $('#fmsg').textContent=dup;await db.doc('expedientes/'+docId(d.tipo,d.numero)).set({...d,fechaApertura:TS(),creador:yo})}
   $('#dlg').close();irA(d.tipo)}catch(err){$('#fmsg').textContent=err.message}};
 
 /* ---------- Importar Excel / CSV ---------- */
@@ -133,7 +139,8 @@ $('#file').onchange=async e=>{const f=e.target.files[0];if(!f||!esAdmin())return
    const ap=iso(d.fechaApertura),hh=horaT(d.hora);delete d.fechaApertura;delete d.hora;
    const s=norm(d.sexo||'');d.sexo=/^(f|femenino|mujer)/.test(s)?'Femenino':/^(m|h|masculino|hombre)/.test(s)?'Masculino':'';
    d.numero=numExp(d.numero);d.tipo=d.tipo||seccion;limpiar(d);const er=validar(d);if(er){omit.push(`Fila ${i+2}: ${er}`+(/^El número de exp/.test(er)?` (valor leído: "${d.numero}")`:''));continue}
-   const ref=db.doc('expedientes/'+d.numero);if((await ref.get()).exists){omit.push(`Fila ${i+2}: el expediente ${d.numero} ya existe.`);continue}
+   if(await existe(d.tipo,d.numero)){omit.push(`Fila ${i+2}: el expediente ${d.numero} ya existe en ${d.tipo}.`);continue}
+   const ref=db.doc('expedientes/'+docId(d.tipo,d.numero));
    const dt=new Date(ap+'T'+hh+':00'),apT=/^\d{4}-\d\d-\d\d$/.test(ap)&&!isNaN(dt)?firebase.firestore.Timestamp.fromDate(dt):TS();
    await ref.set({...d,fechaApertura:apT,creador:auth.currentUser.email,origen:'importación'});ok++}
   out.textContent=`Importados: ${ok}. Omitidos: ${omit.length}.`+(omit.length?'\n'+omit.slice(0,15).join('\n')+(omit.length>15?'\n…':''):'');buscar()}
@@ -147,19 +154,20 @@ $('#solList').onclick=async e=>{const id=e.target.dataset.u;if(id){await db.doc(
 /* ---------- Borrar registro (administrador) ---------- */
 $('#borrar').onclick=async()=>{if(!esAdmin()||!editando)return;
  if(!confirm(`¿Borrar definitivamente el expediente ${editando.numero} de ${editando.nombre}? Esta acción no se puede deshacer.`))return;
- try{await db.doc('expedientes/'+editando.numero).delete();$('#dlg').close();buscar()}catch(err){$('#fmsg').textContent=err.message}};
+ try{await db.doc('expedientes/'+editando._id).delete();$('#dlg').close();buscar()}catch(err){$('#fmsg').textContent=err.message}};
 
-/* ---------- Descargar todo (administrador) ---------- */
+/* ---------- Descargar la sección abierta (administrador) ---------- */
 const san=v=>typeof v==='string'&&/^[=+\-@]/.test(v)?"'"+v:v;
 const ts=t=>{if(!t)return'';const d=t.toDate();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19).replace('T',' ')};
-$('#btnDesc').onclick=()=>{$('#dmsg').textContent='';$('#dlgD').showModal()};
-async function descargar(tipo){if(!esAdmin())return;const m=$('#dmsg');m.textContent='Preparando…';
- try{const s=await db.collection('expedientes').orderBy(firebase.firestore.FieldPath.documentId()).get();
+$('#btnDesc').onclick=()=>{$('#dmsg').textContent='';$('#dlgDT').textContent='Descargar '+(seccion==='EXP-EST'?'Estomatología':'Generales')+' ('+seccion+')';$('#dlgD').showModal()};
+async function descargar(tipo){if(!esAdmin())return;const m=$('#dmsg'),sec=seccion;m.textContent='Preparando…';
+ try{const s=await db.collection('expedientes').where('tipo','==',sec).get();
   const rows=s.docs.map(d=>{const x=d.data(),o={'Número de expediente':x.numero,'Tipo de expediente':x.tipo||'EXP-GN','Nombre':x.nombre,'Fecha de apertura':ts(x.fechaApertura),'Fecha de nacimiento':x.fechaNacimiento,'Edad':edadDe(x),'Sexo':x.sexo,'CURP':x.curp,'Domicilio':x.domicilio,'Número de contacto':x.telefono,'Carnet de citas':carnetN(x.carnet),'Caso 046/Z21/ILE/CML':x.caso,'Código de defunción':x.codigoDefuncion,'Defunción':x.defuncion||'No','Código mater':x.codigoMater||'No','Número de caso':x.casoCodigo,'Fecha de ingreso':x.fechaIngreso,'Fecha de egreso':x.fechaEgreso,'Fecha de movimiento':x.fechaMovimiento,'Estado':pasivo(x)?'Pasivo':'Activo'};
-   for(const k in o)o[k]=san(o[k]??'');return o});
-  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new(),fn='expedientes_'+new Date().toISOString().slice(0,10);
+   if(sec==='EXP-EST')for(const k of['Defunción','Código de defunción','Código mater','Número de caso','Fecha de ingreso','Fecha de egreso'])delete o[k];
+   for(const k in o)o[k]=san(o[k]??'');return o}).sort((a,b)=>String(a['Número de expediente']).localeCompare(String(b['Número de expediente'])));
+  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new(),fn='expedientes_'+sec+'_'+new Date().toISOString().slice(0,10);
   XLSX.utils.book_append_sheet(wb,ws,'Expedientes');
   if(tipo==='xlsx')XLSX.writeFile(wb,fn+'.xlsx');
   else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+XLSX.utils.sheet_to_csv(ws)],{type:'text/csv;charset=utf-8'}));a.download=fn+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-  m.textContent=`Se descargaron ${rows.length} expedientes.`}catch(err){m.textContent=err.message}}
+  m.textContent=`Se descargaron ${rows.length} expedientes de ${sec}.`}catch(err){m.textContent=err.message}}
 $('#dXlsx').onclick=()=>descargar('xlsx');$('#dCsv').onclick=()=>descargar('csv');

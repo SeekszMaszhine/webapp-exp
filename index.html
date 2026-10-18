@@ -3,7 +3,7 @@
 <title>HMI VG | EXP-ONLINE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261018d"></head><body>
+<link rel="stylesheet" href="styles.css?v=20261018e"></head><body>
 
 <section id="landing" class="view">
 <header class="nav"><b class="logo">HMI VG | EXP-ONLINE</b><button class="btn ghost" data-go="auth">Ingresar</button></header>
@@ -26,7 +26,7 @@
 <header class="nav"><b class="logo">HMI VG | EXP-ONLINE</b><div class="who"><span id="quien"></span><button class="btn ghost sm salir">Salir</button></div></header>
 <main class="wrap">
 <div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
-<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar todo</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
+<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar sección</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
 <pre id="res" hidden></pre>
 <div class="tabs sec"><button class="stab on" data-s="EXP-GN">Generales · EXP-GN</button><button class="stab" data-s="EXP-EST">Estomatología · EXP-EST</button></div>
 <div class="tw"><table><thead><tr><th>Número<th>Tipo<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Caso<th class="cm">Código mater<th>Estado</thead><tbody id="rows"></tbody></table></div>
@@ -54,11 +54,11 @@
 <label class="gn">Código mater<select name="codigoMater"><option>No</option><option>Sí</option></select></label>
 <label id="caso" hidden>Número de caso (opcional)<input name="casoCodigo"></label>
 </div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost danger" id="borrar" hidden>Borrar registro</button><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
-<dialog id="dlgD"><h2>Descargar todo</h2><p>Se descargan todos los expedientes almacenados.</p><p id="dmsg" class="err"></p><div class="end"><button class="btn ghost" onclick="this.closest('dialog').close()">Cerrar</button><button class="btn ghost" id="dXlsx">Excel (.xlsx)</button><button class="btn" id="dCsv">CSV</button></div></dialog>
+<dialog id="dlgD"><h2 id="dlgDT">Descargar</h2><p>Se descargan solo los expedientes de la sección que tienes abierta.</p><p id="dmsg" class="err"></p><div class="end"><button class="btn ghost" onclick="this.closest('dialog').close()">Cerrar</button><button class="btn ghost" id="dXlsx">Excel (.xlsx)</button><button class="btn" id="dCsv">CSV</button></div></dialog>
 <dialog id="dlgS"><h2>Solicitudes de acceso</h2><div id="solList"></div><div class="end"><button class="btn ghost" onclick="this.closest('dialog').close()">Cerrar</button></div></dialog>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20261018d"></script></body></html>
+<script src="app.js?v=20261018e"></script></body></html>
