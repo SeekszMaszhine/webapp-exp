@@ -10,7 +10,7 @@
 };
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261018c';
+const VERSION='20261018d';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const show=id=>$$('.view').forEach(v=>v.hidden=v.id!==id);
@@ -27,7 +27,7 @@ setInterval(tick,1000);tick();
 /* ---------- Validaciones ---------- */
 const RX_NUM=/^\d{2}-\d{5}$/;
 const RX_CURP=/^[A-Z][AEIOUX][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d$/;
-const carnetN=v=>{const t=String(v||'').trim();return/^d/i.test(t)?'Duplicado':/^(e|s|x)/i.test(t)?'Entregado':'Ninguno'};
+const carnetN=v=>{const t=String(v||'').trim();return/^d/i.test(t)?'Duplicado':/^(e|s|x|t|v|1)/i.test(t)?'Entregado':'Ninguno'};
 const edadDe=x=>x.fechaNacimiento?edad(x.fechaNacimiento):(x.edad||'');
 const edad=f=>{if(!f)return'';const n=new Date(f+'T00:00'),h=new Date();let a=h.getFullYear()-n.getFullYear();if(h<new Date(h.getFullYear(),n.getMonth(),n.getDate()))a--;return a};
 function validar(d,estricto){
@@ -116,11 +116,11 @@ const MAP={numerodeexpediente:'numero',noexpediente:'numero',expediente:'numero'
 nombre:'nombre',paciente:'nombre',nombredelpaciente:'nombre',apellidopaternomaternonombres:'nombre',
 fapertura:'fechaApertura',fechadeapertura:'fechaApertura',hora:'hora',horadeapertura:'hora',
 fechadenacimiento:'fechaNacimiento',fdenacimiento:'fechaNacimiento',edad:'edad',domicilio:'domicilio',
-fmovimiento:'fechaMovimiento',fechademovimiento:'fechaMovimiento',ingreso:'fechaIngreso',fechadeingreso:'fechaIngreso',egreso:'fechaEgreso',fechadeegreso:'fechaEgreso',
+fmovimiento:'fechaMovimiento',fechademov:'fechaMovimiento',fechadenac:'fechaNacimiento',fechademovimiento:'fechaMovimiento',ingreso:'fechaIngreso',fechadeingreso:'fechaIngreso',egreso:'fechaEgreso',fechadeegreso:'fechaEgreso',
 curp:'curp',carnet:'carnet',carnetdecitas:'carnet',telefono:'telefono',numerodecontacto:'telefono',contacto:'telefono',sexo:'sexo',genero:'sexo',
 codigomater:'codigoMater',cm:'codigoMater',caso:'casoCodigo',numerodecaso:'casoCodigo',casocodigo:'casoCodigo',caso046z21ile:'caso',caso046z21ilecml:'caso',clave:'caso',caso3:'codigoDefuncion',codigodedefuncion:'codigoDefuncion',defuncion:'defuncion'};
-const horaT=v=>{let h,m;if(v instanceof Date){const d=new Date(v.getTime()+3e4);h=d.getHours();m=d.getMinutes()}else if(typeof v==='number'&&v>=0&&v<1){const t=Math.round(v*1440);h=Math.floor(t/60);m=t%60}else{const x=String(v||'').match(/(\d{1,2})[:.](\d{2})/);if(!x)return'00:00';h=+x[1];m=+x[2]}return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')};
-const campo=k=>{const n=norm(k);return MAP[n]||((/expediente/.test(n)&&!/tipo|fecha|estado/.test(n))||n==='folio'||n==='exp'?'numero':null)};
+const horaT=v=>{let h,m;if(v instanceof Date){const d=new Date(v.getTime()+3e4);h=d.getHours();m=d.getMinutes()}else if(typeof v==='number'&&v>=0&&v<1){const t=Math.round(v*1440);h=Math.floor(t/60);m=t%60}else{const t=String(v||''),x=t.match(/(\d{1,2})[:.](\d{2})/);if(!x)return'00:00';h=+x[1];m=+x[2];if(/p\.?\s*m/i.test(t)&&h<12)h+=12;else if(/a\.?\s*m/i.test(t)&&h===12)h=0}return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')};
+const campo=k=>{const n=norm(k);return MAP[n]||(/apellido/.test(n)?'nombre':/^telefono/.test(n)?'telefono':((/expediente/.test(n)&&!/tipo|fecha|estado/.test(n))||n==='folio'||n==='exp')?'numero':null)};
 const numExp=v=>{let s=String(v??'').trim().replace(/[\u2010-\u2015\u2212]/g,'-').replace(/\s+/g,'');if(/^\d{7}$/.test(s))s=s.slice(0,2)+'-'+s.slice(2);const m=s.match(/^(\d{2})-(\d{1,5})$/);return m?m[1]+'-'+m[2].padStart(5,'0'):s};
 function iso(v){if(!v)return'';if(v instanceof Date){const d=new Date(v.getTime()+432e5);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
  const s=String(v).trim(),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:s.slice(0,10)}
