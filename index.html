@@ -26,14 +26,16 @@
 <header class="nav"><b class="logo">HMI VG | EXP-ONLINE</b><div class="who"><span id="quien"></span><button class="btn ghost sm salir">Salir</button></div></header>
 <main class="wrap">
 <div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
-<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><label class="btn ghost">Importar Excel<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnSol" hidden>Solicitudes</button></div></div>
+<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar todo</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
 <pre id="res" hidden></pre>
-<div class="tw"><table><thead><tr><th>Número<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Caso<th>Código mater<th>Estado</thead><tbody id="rows"></tbody></table></div>
-<p class="hint">Para importar desde Access, expórtalo primero a Excel o CSV.</p></main></section>
+<div class="tabs sec"><button class="stab on" data-s="EXP-GN">Generales · EXP-GN</button><button class="stab" data-s="EXP-EST">Estomatología · EXP-EST</button></div>
+<div class="tw"><table><thead><tr><th>Número<th>Tipo<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Caso<th>Código mater<th>Estado</thead><tbody id="rows"></tbody></table></div>
+<p class="hint" id="hint" hidden>Para importar desde Access, expórtalo primero a Excel o CSV.</p></main></section>
 
 <dialog id="dlg"><form id="expForm"><h2 id="dlgT"></h2><div class="grid">
 <label>Número de expediente<input name="numero" placeholder="XX-XXXXX" pattern="\d{2}-\d{5}" required></label>
 <label>Apertura (automática)<input id="apertura" readonly></label>
+<label class="w2">Tipo de expediente<select name="tipo"><option>EXP-GN</option><option>EXP-EST</option></select></label>
 <label class="w2">Nombre del paciente<input name="nombre" required></label>
 <label>Fecha de nacimiento<input name="fechaNacimiento" type="date" required></label>
 <label>Edad<input id="edadV" readonly></label>
@@ -49,7 +51,8 @@
 <label>Fecha de movimiento<input name="fechaMovimiento" type="date"></label>
 <label>Código mater<select name="codigoMater"><option>No</option><option>Sí</option></select></label>
 <label id="caso" hidden>Número de caso (opcional)<input name="casoCodigo"></label>
-</div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
+</div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost danger" id="borrar" hidden>Borrar registro</button><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
+<dialog id="dlgD"><h2>Descargar todo</h2><p>Se descargan todos los expedientes almacenados.</p><p id="dmsg" class="err"></p><div class="end"><button class="btn ghost" onclick="this.closest('dialog').close()">Cerrar</button><button class="btn ghost" id="dXlsx">Excel (.xlsx)</button><button class="btn" id="dCsv">CSV</button></div></dialog>
 <dialog id="dlgS"><h2>Solicitudes de acceso</h2><div id="solList"></div><div class="end"><button class="btn ghost" onclick="this.closest('dialog').close()">Cerrar</button></div></dialog>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
