@@ -9,8 +9,19 @@
     measurementId: "G-9Y54VE2T85"
 };
 firebase.initializeApp(firebaseConfig);
+// 2) App Check con reCAPTCHA v3: pega aquí la CLAVE PÚBLICA (site key) de reCAPTCHA v3 (ver LEEME.txt)
+const RECAPTCHA_SITE_KEY="TU_CLAVE_RECAPTCHA_V3";
+if(['localhost','127.0.0.1'].includes(location.hostname))self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
+if(!RECAPTCHA_SITE_KEY.startsWith('TU_'))firebase.appCheck().activate(RECAPTCHA_SITE_KEY,true);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261018e';
+const VERSION='20261028a';
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
+const falla=e=>{console.error('Error:',e&&e.code||'desconocido');return e&&e.code==='permission-denied'?'No tienes permiso para realizar esta acción.':'No se pudo completar la operación. Intenta de nuevo.'};
+/* Registro de actividad (solo se escribe; las reglas impiden modificarlo o borrarlo) */
+const audit=(accion,id,extra)=>{const u=auth.currentUser;if(!u)return;db.collection('audit_log').add({timestamp:TS(),user_id:u.uid,user_email:u.email,action:accion,resource_type:'expediente',resource_id:id||'',...extra}).catch(e=>console.error('Auditoría:',e.code))};
+/* Cierre de sesión por inactividad (15 min) */
+let idle;const reiniciar=()=>{clearTimeout(idle);if(auth.currentUser)idle=setTimeout(()=>auth.signOut(),15*60*1000)};
+['click','keydown','mousemove','touchstart'].forEach(ev=>addEventListener(ev,reiniciar,{passive:true}));
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const show=id=>$$('.view').forEach(v=>v.hidden=v.id!==id);
@@ -30,37 +41,40 @@ const RX_CURP=/^[A-Z][AEIOUX][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[H
 const carnetN=v=>{const t=String(v||'').trim();return/^d/i.test(t)?'Duplicado':/^(e|s|x|t|v|1)/i.test(t)?'Entregado':'Ninguno'};
 const edadDe=x=>x.fechaNacimiento?edad(x.fechaNacimiento):(x.edad||'');
 const edad=f=>{if(!f)return'';const n=new Date(f+'T00:00'),h=new Date();let a=h.getFullYear()-n.getFullYear();if(h<new Date(h.getFullYear(),n.getMonth(),n.getDate()))a--;return a};
-function validar(d,estricto){
+function validar(d,estricto,sinCurp){
  if(!RX_NUM.test(d.numero))return'El número de expediente debe tener el formato XX-XXXXX.';
  if(!d.nombre)return'Escribe el nombre del paciente.';
- for(const k of['fechaNacimiento','fechaMovimiento','fechaIngreso','fechaEgreso'])if(d[k]&&!/^\d{4}-\d\d-\d\d$/.test(d[k]))return`Fecha no válida: "${d[k]}".`;
+ for(const k of['fechaNacimiento','fechaMovimiento','fechaIngreso','fechaEgreso'])if(d[k]&&!ISO.test(d[k])&&(k==='fechaNacimiento'||!sinCurp))return`Fecha no válida: "${d[k]}".`;
  if(estricto){
   if(!d.fechaNacimiento)return'Indica la fecha de nacimiento.';
   if(!d.sexo)return'El sexo debe ser Masculino o Femenino.';
   if(!d.domicilio)return'Escribe el domicilio.';
   if(!/^(\d{8}|\d{10})$/.test(String(d.telefono).replace(/\D/g,'')))return'El número de contacto debe tener 8 o 10 dígitos.'}
  if(d.sexo&&!['Masculino','Femenino'].includes(d.sexo))return'El sexo debe ser Masculino o Femenino.';
- if(d.curp){
+ if(d.curp&&!sinCurp){
   if(!RX_CURP.test(d.curp))return'La CURP no tiene un formato válido.';
   if(d.fechaNacimiento&&d.curp.slice(4,10)!==d.fechaNacimiento.slice(2).replace(/-/g,''))return'La fecha de nacimiento no coincide con la CURP.';
   if(d.sexo&&d.curp[10]!==(d.sexo==='Masculino'?'H':'M'))return'El sexo no coincide con la CURP.'}
  return null}
-function limpiar(d){d.nombre=String(d.nombre||'').trim().toUpperCase();d.curp=String(d.curp||'').trim().toUpperCase();d.telefono=String(d.telefono??'').trim();
- d.numero=String(d.numero||'').trim();d.domicilio=String(d.domicilio||'').trim();d.nombreLower=d.nombre.toLowerCase();
+function limpiar(d){d.nombre=String(d.nombre||'').trim().toUpperCase().slice(0,150);d.curp=String(d.curp||'').trim().toUpperCase().slice(0,30);d.telefono=String(d.telefono??'').trim().slice(0,40);
+ d.numero=String(d.numero||'').trim();d.domicilio=String(d.domicilio||'').trim().slice(0,300);d.nombreLower=d.nombre.toLowerCase();
  d.edad=d.fechaNacimiento?edad(d.fechaNacimiento):String(d.edad??'').replace(/\D/g,'');
  d.tipo=/est/i.test(String(d.tipo||''))?'EXP-EST':'EXP-GN';
- d.codigoMater=/^s[ií]$/i.test(String(d.codigoMater||'').trim())?'Sí':'No';d.codigoDefuncion=String(d.codigoDefuncion??'').trim();d.defuncion=/^(s|x|1)/i.test(String(d.defuncion||''))?'Sí':'No';d.carnet=carnetN(d.carnet);
+ d.codigoMater=/^s[ií]$/i.test(String(d.codigoMater||'').trim())?'Sí':'No';d.codigoDefuncion=String(d.codigoDefuncion??'').trim().slice(0,40);d.defuncion=/^(s|x|1)/i.test(String(d.defuncion||''))?'Sí':'No';d.carnet=carnetN(d.carnet);
  let c=String(d.caso||'').trim().toUpperCase();if(c==='46')c='046';d.caso=['046','Z21','ILE','CML'].includes(c)?c:'';
- d.casoCodigo=d.codigoMater==='Sí'?String(d.casoCodigo??'').trim():'';
+ d.casoCodigo=d.codigoMater==='Sí'?String(d.casoCodigo??'').trim().slice(0,40):'';
  if(d.tipo==='EXP-EST'){d.codigoMater='No';d.casoCodigo='';d.defuncion='No';d.codigoDefuncion='';d.fechaIngreso='';d.fechaEgreso='';if(d.caso!=='Z21')d.caso=''}
  return d}
 
 /* ---------- Estado activo / pasivo (5 años sin movimiento) ---------- */
-const ultimo=x=>[x.fechaMovimiento,x.fechaIngreso,x.fechaEgreso].filter(Boolean).sort().pop()||(x.fechaApertura?x.fechaApertura.toDate().toISOString().slice(0,10):'');
+const ISO=/^\d{4}-\d\d-\d\d$/;
+const malas=x=>[['fechaMovimiento','movimiento'],['fechaIngreso','ingreso'],['fechaEgreso','egreso']].filter(([k])=>x[k]&&!ISO.test(x[k]));
+const avisoFechas=x=>{const m=malas(x);return m.length?'Fechas por corregir (valor original): '+m.map(([k,n])=>n+' "'+x[k]+'"').join(', ')+'.':''};
+const ultimo=x=>[x.fechaMovimiento,x.fechaIngreso,x.fechaEgreso].filter(v=>ISO.test(v||'')).sort().pop()||(x.fechaApertura?x.fechaApertura.toDate().toISOString().slice(0,10):'');
 const pasivo=x=>{const u=ultimo(x);if(!u)return false;const l=new Date();l.setFullYear(l.getFullYear()-5);return new Date(u+'T00:00')<l};
 
 /* ---------- Acceso y registro ---------- */
-const errTxt=e=>({'auth/invalid-credential':'Correo o contraseña incorrectos.','auth/email-already-in-use':'Ese correo ya está registrado.','auth/weak-password':'La contraseña debe tener al menos 6 caracteres.','auth/invalid-email':'Escribe un correo válido.'}[e.code]||e.message);
+const errTxt=e=>({'auth/invalid-credential':'Correo o contraseña incorrectos.','auth/email-already-in-use':'Ese correo ya está registrado.','auth/weak-password':'La contraseña debe tener al menos 6 caracteres.','auth/invalid-email':'Escribe un correo válido.'}[e.code]||'No se pudo iniciar sesión. Intenta de nuevo.');
 $$('.tab').forEach(t=>t.onclick=()=>{modo=t.dataset.m;$$('.tab').forEach(x=>x.classList.toggle('on',x===t));$('#authBtn').textContent=modo==='login'?'Ingresar':'Crear cuenta'});
 $('#authForm').onsubmit=async e=>{e.preventDefault();$('#amsg').textContent='';const em=$('#email').value.trim(),pw=$('#pw').value;
  try{if(modo==='login')await auth.signInWithEmailAndPassword(em,pw);
@@ -68,20 +82,20 @@ $('#authForm').onsubmit=async e=>{e.preventDefault();$('#amsg').textContent='';c
  catch(err){$('#amsg').textContent=errTxt(err)}};
 $$('.salir').forEach(b=>b.onclick=()=>auth.signOut());
 auth.onAuthStateChanged(u=>{unsub&&unsub();
- if(!u){perfil=null;$('#authForm').hidden=false;$('#pend').hidden=true;return show('landing')}
+ if(!u){perfil=null;lista=[];editando=null;clearTimeout(idle);$('#rows').innerHTML='';$$('dialog').forEach(d=>d.open&&d.close());F.reset();$('#authForm').hidden=false;$('#pend').hidden=true;return show('landing')}
  unsub=db.doc('users/'+u.uid).onSnapshot(s=>{perfil=s.data()||{};
-  if(perfil.aprobado){show('app');$('#quien').textContent=u.email;$('#adm').hidden=$('#hint').hidden=perfil.rol!=='admin';buscar()}
+  if(perfil.aprobado){reiniciar();show('app');$('#quien').textContent=u.email;$('#adm').hidden=$('#hint').hidden=perfil.rol!=='admin';buscar()}
   else{show('auth');$('#authForm').hidden=true;$('#pend').hidden=false}})});
 
 /* ---------- Búsqueda ---------- */
 async function buscar(e){e&&e.preventDefault();const t=$('#q').value.trim(),C=db.collection('expedientes'),con=s=>s.docs.map(d=>({...d.data(),_id:d.id}));
- try{if(!t){const B=C.where('tipo','==',seccion);let s;try{s=await B.orderBy('fechaApertura','desc').limit(50).get()}catch(err){if(err.code!=='failed-precondition')throw err;s=await B.limit(50).get()}lista=con(s)}
+ try{if(!t){lista=con(await C.orderBy('listaKey','desc').startAt(seccion+'|\uf8ff').endAt(seccion+'|').limit(50).get())}
   else{let q;if(/^[\d-]+$/.test(t))q=C.orderBy('numero').startAt(t).endAt(t+'\uf8ff');
    else if(/^[A-Za-z]{4}\d{6}/.test(t))q=C.where('curp','==',t.toUpperCase());
    else{const l=t.toLowerCase();q=C.orderBy('nombreLower').startAt(l).endAt(l+'\uf8ff')}
    lista=con(await q.limit(300).get()).filter(x=>(x.tipo||'EXP-GN')===seccion).slice(0,50)}
-  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td><span class="tag t${x.tipo==='EXP-EST'?' e':''}">${esc(x.tipo||'EXP-GN')}</span><td>${esc(x.nombre)}<td>${esc(x.curp)}<td>${esc(edadDe(x))}<td>${ultimo(x)||'—'}<td>${esc(x.caso||'')}<td class="cm">${x.codigoMater==='Sí'?esc(x.casoCodigo||'Sí'):'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="9" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
- catch(err){$('#rows').innerHTML='<tr><td colspan="9" class="vacio">'+esc(err.message)}}
+  $('#rows').innerHTML=lista.length?lista.map((x,i)=>`<tr data-i="${i}"><td>${esc(x.numero)}<td><span class="tag t${x.tipo==='EXP-EST'?' e':''}">${esc(x.tipo||'EXP-GN')}</span><td>${esc(x.nombre)}<td class="${x.curp&&!RX_CURP.test(x.curp)?'mal':''}">${esc(x.curp)}<td>${esc(edadDe(x))}<td>${ultimo(x)||'—'}${malas(x).length?' <span class="mal" title="Fecha por corregir">!</span>':''}<td>${esc(x.caso||'')}<td class="cm">${x.codigoMater==='Sí'?esc(x.casoCodigo||'Sí'):'—'}<td><span class="tag ${pasivo(x)?'p':'a'}">${pasivo(x)?'Pasivo':'Activo'}</span>${x.defuncion==='Sí'?' <span class="tag d">Defunción</span>':''}`).join(''):'<tr><td colspan="9" class="vacio">Sin resultados. Prueba con otro dato o crea un nuevo expediente.'}
+ catch(err){$('#rows').innerHTML='<tr><td colspan="9" class="vacio">'+esc(falla(err))}}
 $('#busq').onsubmit=buscar;
 function irA(t){seccion=t;$('.tw').classList.toggle('est',t==='EXP-EST');$$('.stab').forEach(b=>b.classList.toggle('on',b.dataset.s===t));buscar()}
 $$('.stab').forEach(b=>b.onclick=()=>irA(b.dataset.s));
@@ -89,6 +103,8 @@ $('#rows').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(tr)abrir(lista
 
 /* ---------- Número único por sección ---------- */
 const docId=(t,n)=>t+'_'+n;
+const lk=(t,v)=>t+'|'+String(v).padStart(15,'0');
+const tiempo=x=>x.listaKey?x.listaKey.split('|')[1]:String(x.fechaApertura?x.fechaApertura.toMillis():0).padStart(15,'0');
 async function existe(t,n){const C=db.collection('expedientes');if((await C.doc(docId(t,n)).get()).exists)return true;
  const v=await C.doc(n).get();return v.exists&&(v.data().tipo||'EXP-GN')===t}
 
@@ -102,7 +118,7 @@ function aplicarTipo(){const est=F.tipo.value==='EXP-EST',C=F.elements.caso;$$('
 F.tipo.onchange=aplicarTipo;
 function abrir(x){editando=x||null;F.reset();if(x)for(const[k,v]of Object.entries(x))if(F.elements[k]&&typeof v==='string')F.elements[k].value=v;
  F.carnet.value=carnetN(x&&x.carnet);F.tipo.value=x?(x.tipo||'EXP-GN'):seccion;F.tipo.disabled=!!x&&!esAdmin();F.numero.readOnly=!!x&&!esAdmin();const A=$('#apertura'),ed=!!x&&esAdmin()&&!!x.fechaApertura;A.readOnly=!ed;A.type=ed?'datetime-local':'text';A.step=1;
- if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();aplicarTipo();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent='';tick();
+ if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();aplicarTipo();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent=x?avisoFechas(x):'';tick();if(x)audit('read',x._id,{seccion:x.tipo||'EXP-GN'});
  $('#dlgT').textContent=x?'Editar expediente':'Nuevo expediente';$('#dlg').showModal()}
 $('#nuevo').onclick=()=>abrir();$('#cerrar').onclick=()=>$('#dlg').close();
 F.onsubmit=async e=>{e.preventDefault();const raw=Object.fromEntries(new FormData(F));if(editando&&!esAdmin())raw.tipo=editando.tipo||'EXP-GN';
@@ -111,10 +127,10 @@ F.onsubmit=async e=>{e.preventDefault();const raw=Object.fromEntries(new FormDat
  try{if(editando){const A=$('#apertura'),data={...d,actualizado:TS(),editor:yo},viejo=db.doc('expedientes/'+editando._id);
    if(esAdmin()&&A.type==='datetime-local'&&A.value)data.fechaApertura=firebase.firestore.Timestamp.fromDate(new Date(A.value));
    if(esAdmin()&&(d.numero!==editando.numero||d.tipo!==(editando.tipo||'EXP-GN'))){if(await existe(d.tipo,d.numero))return $('#fmsg').textContent=dup;
-    const{_id,...orig}=editando,b=db.batch();b.set(db.doc('expedientes/'+docId(d.tipo,d.numero)),{...orig,...data});b.delete(viejo);await b.commit()}
-   else await viejo.update(data)}
-  else{if(await existe(d.tipo,d.numero))return $('#fmsg').textContent=dup;await db.doc('expedientes/'+docId(d.tipo,d.numero)).set({...d,fechaApertura:TS(),creador:yo})}
-  $('#dlg').close();irA(d.tipo)}catch(err){$('#fmsg').textContent=err.message}};
+    const{_id,...orig}=editando,b=db.batch();b.set(db.doc('expedientes/'+docId(d.tipo,d.numero)),{...orig,...data,listaKey:lk(d.tipo,tiempo(editando))});b.delete(viejo);await b.commit();audit('update',docId(d.tipo,d.numero),{seccion:d.tipo,campos:['numero/tipo']})}
+   else{await viejo.update(data);audit('update',editando._id,{seccion:d.tipo,campos:Object.keys(d).filter(k=>!['nombreLower','edad'].includes(k)&&String(d[k]??'')!==String(editando[k]??''))})}}
+  else{if(await existe(d.tipo,d.numero))return $('#fmsg').textContent=dup;const id=docId(d.tipo,d.numero);await db.doc('expedientes/'+id).set({...d,fechaApertura:TS(),creadoEn:TS(),listaKey:lk(d.tipo,Date.now()),creador:yo});audit('create',id,{seccion:d.tipo})}
+  $('#dlg').close();irA(d.tipo)}catch(err){$('#fmsg').textContent=falla(err)}};
 
 /* ---------- Importar Excel / CSV ---------- */
 const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -128,23 +144,26 @@ codigomater:'codigoMater',cm:'codigoMater',caso:'casoCodigo',numerodecaso:'casoC
 const horaT=v=>{let h,m;if(v instanceof Date){const d=new Date(v.getTime()+3e4);h=d.getHours();m=d.getMinutes()}else if(typeof v==='number'&&v>=0&&v<1){const t=Math.round(v*1440);h=Math.floor(t/60);m=t%60}else{const t=String(v||''),x=t.match(/(\d{1,2})[:.](\d{2})/);if(!x)return'00:00';h=+x[1];m=+x[2];if(/p\.?\s*m/i.test(t)&&h<12)h+=12;else if(/a\.?\s*m/i.test(t)&&h===12)h=0}return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')};
 const campo=k=>{const n=norm(k);return MAP[n]||(/apellido/.test(n)?'nombre':/^telefono/.test(n)?'telefono':((/expediente/.test(n)&&!/tipo|fecha|estado/.test(n))||n==='folio'||n==='exp')?'numero':null)};
 const numExp=v=>{let s=String(v??'').trim().replace(/[\u2010-\u2015\u2212]/g,'-').replace(/\s+/g,'');if(/^\d{7}$/.test(s))s=s.slice(0,2)+'-'+s.slice(2);const m=s.match(/^(\d{2})-(\d{1,5})$/);return m?m[1]+'-'+m[2].padStart(5,'0'):s};
-function iso(v){if(!v)return'';if(v instanceof Date){const d=new Date(v.getTime()+432e5);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
- const s=String(v).trim(),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:s.slice(0,10)}
-$('#file').onchange=async e=>{const f=e.target.files[0];if(!f||!esAdmin())return;const out=$('#res');out.hidden=false;out.textContent='Importando…';
- try{const wb=XLSX.read(await f.arrayBuffer(),{cellDates:true}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});let ok=0,omit=[];
+function iso(v,tal){if(!v)return'';if(v instanceof Date){const d=new Date(v.getTime()+432e5);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+ const s=String(v).trim(),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+ if(m){const r=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;const dt=new Date(Date.UTC(+m[3],+m[2]-1,+m[1]));return tal&&(dt.getUTCMonth()!==+m[2]-1||dt.getUTCDate()!==+m[1])?s.slice(0,60):r}
+ const n=s.match(/^\d{4}-\d\d-\d\d/);return n?n[0]:s.slice(0,tal?60:10)}
+$('#file').onchange=async e=>{const f=e.target.files[0];if(!f||!esAdmin())return;const out=$('#res');out.hidden=false;if(!/\.(xlsx|xls|csv)$/i.test(f.name)||f.size>15*1024*1024){out.textContent='Archivo no válido: usa .xlsx, .xls o .csv de máximo 15 MB.';e.target.value='';return}
+ out.textContent='Importando…';
+ try{const wb=XLSX.read(await f.arrayBuffer(),{cellDates:true}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});let ok=0,omit=[];const base=Date.now();
   const cols=Object.keys(rows[0]||{});if(!cols.some(k=>campo(k)==='numero')){out.textContent='No encontré la columna del número de expediente. Columnas leídas: '+(cols.join(', ')||'ninguna')+'. Revisa que los encabezados estén en la fila 1 de la primera hoja.';e.target.value='';return}
   for(const[i,r]of rows.entries()){const d={};for(const[k,v]of Object.entries(r)){const c=campo(k);if(c&&(v!==''||!(c in d)))d[c]=v}
    if(!String(d.numero??'').trim()&&!String(d.nombre??'').trim())continue;
-   for(const k of['fechaNacimiento','fechaMovimiento','fechaIngreso','fechaEgreso'])d[k]=iso(d[k]);
+   d.fechaNacimiento=iso(d.fechaNacimiento);for(const k of['fechaMovimiento','fechaIngreso','fechaEgreso'])d[k]=iso(d[k],true);
    const ap=iso(d.fechaApertura),hh=horaT(d.hora);delete d.fechaApertura;delete d.hora;
    const s=norm(d.sexo||'');d.sexo=/^(f|femenino|mujer)/.test(s)?'Femenino':/^(m|h|masculino|hombre)/.test(s)?'Masculino':'';
-   d.numero=numExp(d.numero);d.tipo=d.tipo||seccion;limpiar(d);const er=validar(d);if(er){omit.push(`Fila ${i+2}: ${er}`+(/^El número de exp/.test(er)?` (valor leído: "${d.numero}")`:''));continue}
+   d.numero=numExp(d.numero);d.tipo=d.tipo||seccion;limpiar(d);const er=validar(d,false,true);if(er){omit.push(`Fila ${i+2}: ${er}`+(/^El número de exp/.test(er)?` (valor leído: "${d.numero}")`:''));continue}
    if(await existe(d.tipo,d.numero)){omit.push(`Fila ${i+2}: el expediente ${d.numero} ya existe en ${d.tipo}.`);continue}
    const ref=db.doc('expedientes/'+docId(d.tipo,d.numero));
    const dt=new Date(ap+'T'+hh+':00'),apT=/^\d{4}-\d\d-\d\d$/.test(ap)&&!isNaN(dt)?firebase.firestore.Timestamp.fromDate(dt):TS();
-   await ref.set({...d,fechaApertura:apT,creador:auth.currentUser.email,origen:'importación'});ok++}
-  out.textContent=`Importados: ${ok}. Omitidos: ${omit.length}.`+(omit.length?'\n'+omit.slice(0,15).join('\n')+(omit.length>15?'\n…':''):'');buscar()}
- catch(err){out.textContent='No se pudo importar: '+err.message}e.target.value=''};
+   await ref.set({...d,fechaApertura:apT,creadoEn:TS(),listaKey:lk(d.tipo,base+(rows.length-i)),creador:auth.currentUser.email,origen:'importación'});ok++}
+  out.textContent=`Importados: ${ok}. Omitidos: ${omit.length}.`+(omit.length?'\n'+omit.slice(0,15).join('\n')+(omit.length>15?'\n…':''):'');audit('create','importación',{seccion,registros:ok,omitidos:omit.length});buscar()}
+ catch(err){console.error('Error:',err&&err.code||'desconocido');out.textContent='No se pudo importar el archivo. Revisa que sea un Excel o CSV válido y que tengas permiso.'}e.target.value=''};
 
 /* ---------- Solicitudes (administrador) ---------- */
 $('#btnSol').onclick=async()=>{const s=await db.collection('users').where('aprobado','==',false).get();
@@ -154,7 +173,7 @@ $('#solList').onclick=async e=>{const id=e.target.dataset.u;if(id){await db.doc(
 /* ---------- Borrar registro (administrador) ---------- */
 $('#borrar').onclick=async()=>{if(!esAdmin()||!editando)return;
  if(!confirm(`¿Borrar definitivamente el expediente ${editando.numero} de ${editando.nombre}? Esta acción no se puede deshacer.`))return;
- try{await db.doc('expedientes/'+editando._id).delete();$('#dlg').close();buscar()}catch(err){$('#fmsg').textContent=err.message}};
+ try{const id=editando._id,sec=editando.tipo||'EXP-GN';await db.doc('expedientes/'+id).delete();audit('delete',id,{seccion:sec});$('#dlg').close();buscar()}catch(err){$('#fmsg').textContent=falla(err)}};
 
 /* ---------- Descargar la sección abierta (administrador) ---------- */
 const san=v=>typeof v==='string'&&/^[=+\-@]/.test(v)?"'"+v:v;
@@ -169,5 +188,13 @@ async function descargar(tipo){if(!esAdmin())return;const m=$('#dmsg'),sec=secci
   XLSX.utils.book_append_sheet(wb,ws,'Expedientes');
   if(tipo==='xlsx')XLSX.writeFile(wb,fn+'.xlsx');
   else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+XLSX.utils.sheet_to_csv(ws)],{type:'text/csv;charset=utf-8'}));a.download=fn+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-  m.textContent=`Se descargaron ${rows.length} expedientes de ${sec}.`}catch(err){m.textContent=err.message}}
+  audit('export','sección',{seccion:sec,registros:rows.length,formato:tipo});m.textContent=`Se descargaron ${rows.length} expedientes de ${sec}.`}catch(err){m.textContent=falla(err)}}
 $('#dXlsx').onclick=()=>descargar('xlsx');$('#dCsv').onclick=()=>descargar('csv');
+
+$$('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+
+/* ---------- Ordenar expedientes anteriores (administrador, una sola vez) ---------- */
+$('#btnOrd').onclick=async()=>{if(!esAdmin())return;const out=$('#res');out.hidden=false;out.textContent='Ordenando expedientes anteriores…';
+ try{const s=await db.collection('expedientes').get();let n=0,c=0,b=db.batch();
+  for(const d of s.docs){const x=d.data();if(x.listaKey)continue;b.update(d.ref,{listaKey:lk(x.tipo||'EXP-GN',x.creadoEn?x.creadoEn.toMillis():x.fechaApertura?x.fechaApertura.toMillis():0)});n++;if(++c===400){await b.commit();b=db.batch();c=0}}
+  if(c)await b.commit();out.textContent=`Listo: ${n} expedientes ordenados.`;buscar()}catch(err){out.textContent=falla(err)}};
