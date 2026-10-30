@@ -14,7 +14,7 @@ const RECAPTCHA_SITE_KEY="TU_CLAVE_RECAPTCHA_V3";
 if(['localhost','127.0.0.1'].includes(location.hostname))self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
 if(!RECAPTCHA_SITE_KEY.startsWith('TU_'))firebase.appCheck().activate(RECAPTCHA_SITE_KEY,true);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261028a';
+const VERSION='20261029b';
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 const falla=e=>{console.error('Error:',e&&e.code||'desconocido');return e&&e.code==='permission-denied'?'No tienes permiso para realizar esta acción.':'No se pudo completar la operación. Intenta de nuevo.'};
 /* Registro de actividad (solo se escribe; las reglas impiden modificarlo o borrarlo) */
@@ -84,7 +84,7 @@ $$('.salir').forEach(b=>b.onclick=()=>auth.signOut());
 auth.onAuthStateChanged(u=>{unsub&&unsub();
  if(!u){perfil=null;lista=[];editando=null;clearTimeout(idle);$('#rows').innerHTML='';$$('dialog').forEach(d=>d.open&&d.close());F.reset();$('#authForm').hidden=false;$('#pend').hidden=true;return show('landing')}
  unsub=db.doc('users/'+u.uid).onSnapshot(s=>{perfil=s.data()||{};
-  if(perfil.aprobado){reiniciar();show('app');$('#quien').textContent=u.email;$('#adm').hidden=$('#hint').hidden=perfil.rol!=='admin';buscar()}
+  if(perfil.aprobado){reiniciar();show('app');$('#quien').textContent=u.email;$('#adm').hidden=$('#hint').hidden=perfil.rol!=='admin';buscar();tutorialInicial()}
   else{show('auth');$('#authForm').hidden=true;$('#pend').hidden=false}})});
 
 /* ---------- Búsqueda ---------- */
@@ -198,3 +198,44 @@ $('#btnOrd').onclick=async()=>{if(!esAdmin())return;const out=$('#res');out.hidd
  try{const s=await db.collection('expedientes').get();let n=0,c=0,b=db.batch();
   for(const d of s.docs){const x=d.data();if(x.listaKey)continue;b.update(d.ref,{listaKey:lk(x.tipo||'EXP-GN',x.creadoEn?x.creadoEn.toMillis():x.fechaApertura?x.fechaApertura.toMillis():0)});n++;if(++c===400){await b.commit();b=db.batch();c=0}}
   if(c)await b.commit();out.textContent=`Listo: ${n} expedientes ordenados.`;buscar()}catch(err){out.textContent=falla(err)}};
+
+/* ---------- Novedades para administradores (una vez por sesión) ---------- */
+const tarjeta=(n,t)=>`<section class="nov"><h3>${esc(t)}</h3><p class="hint">Versión ${esc(n.v)} · ${esc(n.fecha)}</p><ul>${n.cambios.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>${n.requiere?`<p class="req"><b>Requiere:</b> ${esc(n.requiere)}</p>`:''}</section>`;
+function pintarNov(){const i=Math.max(0,NOVEDADES.findIndex(n=>n.v===VERSION)),v=NOVEDADES.find(n=>n.v===$('#novSel').value)||NOVEDADES[i];
+ $('#novA').innerHTML=tarjeta(NOVEDADES[i],'Esta versión');$('#novB').innerHTML=tarjeta(v,'Para comparar')}
+function novedades(forzar){if(!esAdmin()||typeof NOVEDADES==='undefined'||$('#dlgA').open)return;
+ let visto=false;try{visto=sessionStorage.getItem('novVisto')===VERSION}catch(e){}
+ if(visto&&!forzar)return;try{sessionStorage.setItem('novVisto',VERSION)}catch(e){}
+ const i=Math.max(0,NOVEDADES.findIndex(n=>n.v===VERSION)),otras=NOVEDADES.filter((_,k)=>k!==i),sel=$('#novSel');
+ sel.innerHTML=otras.map(n=>`<option value="${esc(n.v)}">${esc(n.v)} · ${esc(n.fecha)}</option>`).join('');
+ const dos=NOVEDADES[i+2]||NOVEDADES[NOVEDADES.length-1];if(dos&&dos.v!==VERSION)sel.value=dos.v;
+ sel.onchange=pintarNov;pintarNov();if(!$('#dlgN').open)$('#dlgN').showModal()}
+$('#btnNov').onclick=()=>novedades(true);
+
+/* ---------- Guía de uso: tutorial por rol y glosario de campos ---------- */
+let ayPaso=0;
+const ayPasos=()=>esAdmin()?[...AYUDA.pasosCap,...AYUDA.pasosAdm]:AYUDA.pasosCap;
+function ayPintar(){const L=ayPasos(),p=L[Math.min(ayPaso,L.length-1)];
+ $('#ayPaso').innerHTML=`<p class="hint">${p.adm?'Para administradores · ':''}Paso ${ayPaso+1} de ${L.length}</p><h3>${esc(p.t)}</h3>${p.x?`<p>${esc(p.x)}</p>`:''}${p.l?`<ul>${p.l.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`:''}`;
+ $('#ayAnt').disabled=ayPaso===0;$('#aySig').textContent=ayPaso>=L.length-1?'Listo':'Siguiente'}
+function ayCampos(filtro,resaltar){const q=norm(filtro||'');
+ $('#ayLista').innerHTML=AYUDA.campos.filter(c=>!q||norm(c.t+c.x).includes(q)).map(c=>`<div class="campo${c.k===resaltar?' hl':''}" id="ay-${esc(c.k)}"><b>${esc(c.t)}</b><p>${esc(c.x)}</p></div>`).join('')||'<p class="hint">Sin resultados.</p>';
+ if(resaltar){const e=$('#ay-'+resaltar);e&&e.scrollIntoView({block:'center'})}}
+function ayTab(t){$$('.aytab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('#ayTut').hidden=t!=='tut';$('#ayCam').hidden=t!=='cam'}
+function ayuda(tab,campo){ayTab(tab);if(!$('#dlgA').open)$('#dlgA').showModal();
+ if(tab==='tut'){ayPaso=0;ayPintar()}else{$('#ayQ').value='';ayCampos('',campo)}}
+$$('.aytab').forEach(b=>b.onclick=()=>{b.dataset.t==='tut'?(ayTab('tut'),ayPintar()):(ayTab('cam'),ayCampos($('#ayQ').value))});
+$('#ayQ').oninput=()=>ayCampos($('#ayQ').value);
+$('#ayAnt').onclick=()=>{ayPaso=Math.max(0,ayPaso-1);ayPintar()};
+$('#aySig').onclick=()=>{if(ayPaso>=ayPasos().length-1)$('#dlgA').close();else{ayPaso++;ayPintar()}};
+$('#btnAyuda').onclick=()=>ayuda('tut');
+function tutorialInicial(){let v=null;try{v=sessionStorage.getItem('ayVisto')}catch(e){}
+ if(!perfil||perfil.tutorialVisto||v){novedades();return}
+ try{sessionStorage.setItem('ayVisto','1')}catch(e){}ayuda('tut')}
+$('#dlgA').addEventListener('close',()=>{const u=auth.currentUser;
+ if(u&&perfil&&perfil.aprobado&&!perfil.tutorialVisto){perfil.tutorialVisto=true;db.doc('users/'+u.uid).update({tutorialVisto:true}).catch(e=>console.error('Error:',e.code))}
+ novedades()});
+const CAMPOS_AYUDA={numero:'numero',tipo:'tipo',nombre:'nombre',fechaNacimiento:'nacimiento',sexo:'sexo',curp:'curp',domicilio:'domicilio',telefono:'telefono',carnet:'carnet',caso:'caso',defuncion:'defuncion',codigoDefuncion:'codigoDefuncion',codigoMater:'codigoMater',casoCodigo:'casoCodigo',fechaIngreso:'ingreso',fechaEgreso:'egreso',fechaMovimiento:'movimiento'};
+const ponerQ=(el,k)=>{const b=document.createElement('button');b.type='button';b.className='q';b.textContent='?';b.title='Ayuda sobre este campo';b.setAttribute('aria-label','Ayuda sobre este campo');b.onclick=()=>ayuda('cam',k);el.closest('label').appendChild(b)};
+for(const[n,k]of Object.entries(CAMPOS_AYUDA))ponerQ(F.elements[n],k);
+ponerQ($('#apertura'),'apertura');ponerQ($('#edadV'),'edad');

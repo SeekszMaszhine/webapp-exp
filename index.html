@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HMIVG ARCHIVO</title>
+<title>HMIVG | ARCHIVO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261028a"></head><body>
+<link rel="stylesheet" href="styles.css?v=20261029b"></head><body>
 
 <section id="landing" class="view">
 <header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><button class="btn ghost" data-go="auth">Ingresar</button></header>
@@ -11,7 +11,7 @@
 <p>Captura, busca y actualiza expedientes clínicos desde cualquier equipo. Los datos viven en la nube y cada apertura queda registrada al segundo.</p>
 <button class="btn" data-go="auth">Acceso para capturistas</button></div>
 <div class="stamp"><small>Apertura de expediente</small><strong id="reloj"></strong><span>Fecha y hora automáticas, no editables</span></div></main>
-<footer>2026 HIM VG | ARCHIVO CLINICO | DEVELOPED BY SEPHYROTH</footer></section>
+<footer>2026 HMI VG | ARCHIVO CLINICO | DEVELOPED BY SEPHYROTH</footer></section>
 
 <section id="auth" class="view" hidden>
 <div class="card"><b class="logo">HMI VG | ARCHIVO CLINICO</b>
@@ -23,10 +23,10 @@
 <button class="link" data-go="landing">Volver al inicio</button></div></section>
 
 <section id="app" class="view" hidden>
-<header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><div class="who"><span id="quien"></span><button class="btn ghost sm salir">Salir</button></div></header>
+<header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><div class="who"><span id="quien"></span><button class="btn ghost sm" id="btnAyuda">Ayuda</button><button class="btn ghost sm salir">Salir</button></div></header>
 <main class="wrap">
 <div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
-<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar sección</button><button class="btn ghost" id="btnOrd">Ordenar anteriores</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
+<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar sección</button><button class="btn ghost" id="btnNov">Novedades</button><button class="btn ghost" id="btnOrd">Ordenar anteriores</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
 <pre id="res" hidden></pre>
 <div class="tabs sec"><button class="stab on" data-s="EXP-GN">Generales · EXP-GN</button><button class="stab" data-s="EXP-EST">Estomatología · EXP-EST</button></div>
 <div class="tw"><table><thead><tr><th>Número<th>Tipo<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Caso<th class="cm">Código mater<th>Estado</thead><tbody id="rows"></tbody></table></div>
@@ -55,6 +55,12 @@
 <label id="caso" hidden>Número de caso (opcional)<input name="casoCodigo" maxlength="40"></label>
 </div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost danger" id="borrar" hidden>Borrar registro</button><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
 <dialog id="dlgD"><h2 id="dlgDT">Descargar</h2><p>Se descargan solo los expedientes de la sección que tienes abierta.</p><p id="dmsg" class="err"></p><div class="end"><button class="btn ghost" data-close>Cerrar</button><button class="btn ghost" id="dXlsx">Excel (.xlsx)</button><button class="btn" id="dCsv">CSV</button></div></dialog>
+<dialog id="dlgA"><h2>Guía de uso</h2>
+<div class="tabs"><button type="button" class="aytab on" data-t="tut">Tutorial</button><button type="button" class="aytab" data-t="cam">Campos</button></div>
+<div id="ayTut"><div id="ayPaso" class="nov"></div><div class="end"><button type="button" class="link sep" data-close>Cerrar</button><button type="button" class="btn ghost" id="ayAnt">Anterior</button><button type="button" class="btn" id="aySig">Siguiente</button></div></div>
+<div id="ayCam" hidden><input id="ayQ" type="search" placeholder="Buscar un campo o una duda…" maxlength="60"><div id="ayLista"></div><div class="end"><button type="button" class="btn" data-close>Cerrar</button></div></div>
+</dialog>
+<dialog id="dlgN"><h2>Novedades del sitio</h2><div class="nov2"><div id="novA"></div><div><label>Comparar con<select id="novSel"></select></label><div id="novB"></div></div></div><div class="end"><button class="btn" data-close>Entendido</button></div></dialog>
 <dialog id="dlgS"><h2>Solicitudes de acceso</h2><div id="solList"></div><div class="end"><button class="btn ghost" data-close>Cerrar</button></div></dialog>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -62,4 +68,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20261028a"></script></body></html>
+<script src="ayuda.js?v=20261029b"></script>
+<script src="novedades.js?v=20261029b"></script>
+<script src="app.js?v=20261029b"></script></body></html>
