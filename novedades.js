@@ -1,26 +1,30 @@
-/* Historial de cambios. La versión más nueva va primero y debe coincidir con VERSION de app.js.
-   Al publicar una versión nueva, agrega arriba una entrada: { v, fecha, cambios:[...], requiere:'...' } */
+/* Historial de cambios del sitio (solo cambios visibles en el sitio; las acciones de configuración externa van en LEEME.txt).
+   La versión más nueva va primero y debe coincidir con VERSION de app.js.
+   Al publicar una versión nueva, agrega arriba una entrada: { v, fecha, cambios:[...] } */
 const NOVEDADES=[
+{v:'20261030b',fecha:'30 oct 2026',cambios:[
+ 'Los expedientes se guardan en dos colecciones separadas de la base de datos, una por sección: exp-gen (generales) y exp-den (estomatología), para revisarlas por separado.',
+ 'El número de expediente es único por sección de forma nativa: el número es el identificador del documento en su colección.',
+ 'Botón "Migrar datos" (solo administradores): úsalo una vez tras actualizar para copiar los expedientes existentes a las colecciones nuevas. No borra nada.']},
+{v:'20261030a',fecha:'30 oct 2026',cambios:[
+ 'Las novedades tienen su propio botón, arriba junto a "Ayuda", con un punto de aviso cuando hay una versión nueva por leer.',
+ 'El aviso de novedades ya no se abre solo: lo consultas cuando quieras.']},
 {v:'20261029b',fecha:'29 oct 2026',cambios:[
  'Guía de uso: tutorial paso a paso la primera vez que entra cada persona (capturistas y administradores).',
  'Botón "Ayuda" para consultarla cuando se necesite, y glosario de campos con buscador.',
- 'Botón "?" junto a cada campo del formulario que abre la explicación de ese campo.'],
- requiere:'Publicar las reglas de Firestore (LEEME.txt) para que el tutorial se marque como visto.'},
+ 'Botón "?" junto a cada campo del formulario que abre la explicación de ese campo.']},
 {v:'20261029a',fecha:'29 oct 2026',cambios:[
- 'Aviso de novedades para administradores: aparece una vez por sesión y también con el botón "Novedades".',
- 'Puedes comparar los cambios de esta versión con los de otra anterior (por defecto, la de hace dos versiones).']},
+ 'Aviso de novedades para administradores, con comparación entre la versión actual y otra anterior (por defecto, la de hace dos versiones).']},
 {v:'20261028a',fecha:'28 oct 2026',cambios:[
  'Importación: las fechas de movimiento, ingreso y egreso se cargan tal cual; las que no se puedan leer se marcan con "!" para corregirlas.',
  'Nuevo diseño en blanco, rojo vino y verde bosque, al estilo Apple.',
- 'La lista muestra primero el último expediente creado o importado.',
+ 'La lista muestra primero el último expediente creado o importado. Botón "Ordenar anteriores" para acomodar los ya guardados (úsalo una vez tras actualizar).',
  'Registro de actividad (quién creó, abrió, editó, borró, importó o descargó) y cierre de sesión a los 15 minutos de inactividad.',
- 'Mensajes de error genéricos; la importación solo acepta .xlsx, .xls o .csv de hasta 15 MB.'],
- requiere:'Publicar las reglas nuevas de Firestore (LEEME.txt) y pulsar una vez "Ordenar anteriores".'},
+ 'Mensajes de error genéricos; la importación solo acepta .xlsx, .xls o .csv de hasta 15 MB.']},
 {v:'20261018g',fecha:'18 oct 2026',cambios:[
  'La CURP ya no se verifica al importar; las que tengan formato inválido se ven en rojo en la lista para corregirlas.']},
 {v:'20261018f',fecha:'18 oct 2026',cambios:[
- 'App Check con reCAPTCHA v3 (se activa al pegar la clave pública en app.js).'],
- requiere:'Opcional: configurar reCAPTCHA y App Check (LEEME.txt).'},
+ 'Compatibilidad con App Check, que verifica que las solicitudes a la base de datos vienen del sitio.']},
 {v:'20261018e',fecha:'18 oct 2026',cambios:[
  'La descarga de información es por sección: cada una baja solo sus registros.',
  'El número de expediente es único por sección (puede repetirse entre EXP-GN y EXP-EST).']},
