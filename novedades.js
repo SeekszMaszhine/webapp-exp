@@ -2,6 +2,10 @@
    La versión más nueva va primero y debe coincidir con VERSION de app.js.
    Al publicar una versión nueva, agrega arriba una entrada: { v, fecha, cambios:[...] } */
 const NOVEDADES=[
+{v:'20261031a',fecha:'31 oct 2026',cambios:[
+ 'Los capturistas pueden solicitar la corrección de los campos que solo cambia un administrador (número de expediente, tipo y fecha de apertura) con el botón "Solicitar corrección", dentro del expediente.',
+ 'Los administradores revisan las solicitudes en "Correcciones" (con aviso de pendientes) y deciden si aplicarlas o rechazarlas; nada cambia solo.',
+ 'Los capturistas ven el estado de sus solicitudes en "Mis correcciones".']},
 {v:'20261030b',fecha:'30 oct 2026',cambios:[
  'Los expedientes se guardan en dos colecciones separadas de la base de datos, una por sección: exp-gen (generales) y exp-den (estomatología), para revisarlas por separado.',
  'El número de expediente es único por sección de forma nativa: el número es el identificador del documento en su colección.',

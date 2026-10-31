@@ -3,7 +3,7 @@
 <title>HMIVG | ARCHIVO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261030b"></head><body>
+<link rel="stylesheet" href="styles.css?v=20261031a"></head><body>
 
 <section id="landing" class="view">
 <header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><button class="btn ghost" data-go="auth">Ingresar</button></header>
@@ -23,10 +23,10 @@
 <button class="link" data-go="landing">Volver al inicio</button></div></section>
 
 <section id="app" class="view" hidden>
-<header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><div class="who"><span id="quien"></span><button class="btn ghost sm" id="btnNov" hidden>Novedades<span class="dot" id="novDot" hidden title="Hay una versión nueva" aria-label="Hay una versión nueva"></span></button><button class="btn ghost sm" id="btnAyuda">Ayuda</button><button class="btn ghost sm salir">Salir</button></div></header>
+<header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><div class="who"><span id="quien"></span><button class="btn ghost sm" id="btnNov" hidden>Novedades<span class="dot" id="novDot" hidden title="Hay una versión nueva" aria-label="Hay una versión nueva"></span></button><button class="btn ghost sm" id="btnMis" hidden>Mis correcciones</button><button class="btn ghost sm" id="btnAyuda">Ayuda</button><button class="btn ghost sm salir">Salir</button></div></header>
 <main class="wrap">
 <div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
-<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar sección</button><button class="btn ghost" id="btnMig">Migrar datos</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
+<div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar sección</button><button class="btn ghost" id="btnCorr">Correcciones<span id="corrPunto" class="punto" hidden></span></button><button class="btn ghost" id="btnMig">Migrar datos</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
 <pre id="res" hidden></pre>
 <div class="tabs sec"><button class="stab on" data-s="EXP-GN">Generales · EXP-GN</button><button class="stab" data-s="EXP-EST">Estomatología · EXP-EST</button></div>
 <div class="tw"><table><thead><tr><th>Número<th>Tipo<th>Paciente<th>CURP<th>Edad<th>Último movimiento<th>Caso<th class="cm">Código mater<th>Estado</thead><tbody id="rows"></tbody></table></div>
@@ -53,13 +53,23 @@
 <label>Fecha de movimiento<input name="fechaMovimiento" type="date"></label>
 <label class="gn">Código mater<select name="codigoMater"><option>No</option><option>Sí</option></select></label>
 <label id="caso" hidden>Número de caso (opcional)<input name="casoCodigo" maxlength="40"></label>
-</div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost danger" id="borrar" hidden>Borrar registro</button><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
+</div><p id="fmsg" class="err"></p><div class="end"><button type="button" class="btn ghost danger" id="borrar" hidden>Borrar registro</button><button type="button" class="btn ghost sep" id="solCorr" hidden>Solicitar corrección</button><button type="button" class="btn ghost" id="cerrar">Cancelar</button><button class="btn">Guardar</button></div></form></dialog>
 <dialog id="dlgD"><h2 id="dlgDT">Descargar</h2><p>Se descargan solo los expedientes de la sección que tienes abierta.</p><p id="dmsg" class="err"></p><div class="end"><button class="btn ghost" data-close>Cerrar</button><button class="btn ghost" id="dXlsx">Excel (.xlsx)</button><button class="btn" id="dCsv">CSV</button></div></dialog>
 <dialog id="dlgA"><h2>Guía de uso</h2>
 <div class="tabs"><button type="button" class="aytab on" data-t="tut">Tutorial</button><button type="button" class="aytab" data-t="cam">Campos</button></div>
 <div id="ayTut"><div id="ayPaso" class="nov"></div><div class="end"><button type="button" class="link sep" data-close>Cerrar</button><button type="button" class="btn ghost" id="ayAnt">Anterior</button><button type="button" class="btn" id="aySig">Siguiente</button></div></div>
 <div id="ayCam" hidden><input id="ayQ" type="search" placeholder="Buscar un campo o una duda…" maxlength="60"><div id="ayLista"></div><div class="end"><button type="button" class="btn" data-close>Cerrar</button></div></div>
 </dialog>
+<dialog id="dlgC"><form id="corrForm"><h2>Solicitar corrección</h2>
+<p class="hint">Estos campos solo los modifica un administrador. Tu solicitud se envía para su revisión y no cambia nada por sí sola.</p>
+<div class="grid"><label class="w2">Campo a corregir<select id="corrCampo"><option value="numero">Número de expediente</option><option value="tipo">Tipo de expediente</option><option value="apertura">Fecha y hora de apertura</option></select></label>
+<label>Valor actual<input id="corrActual" readonly></label>
+<label>Valor correcto<input id="corrNum" placeholder="XX-XXXXX" maxlength="8"><select id="corrTipo" hidden><option>EXP-GN</option><option>EXP-EST</option></select><input id="corrApe" type="datetime-local" step="1" hidden></label>
+<label class="w2">Motivo de la corrección<textarea id="corrMotivo" maxlength="300" rows="3" required></textarea></label></div>
+<p class="hint">No escribas nombres ni otros datos del paciente en el motivo.</p><p id="corrMsg" class="err"></p>
+<div class="end"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn">Enviar solicitud</button></div></form></dialog>
+<dialog id="dlgM"><h2>Mis solicitudes de corrección</h2><div id="misLista"></div><div class="end"><button type="button" class="btn" data-close>Cerrar</button></div></dialog>
+<dialog id="dlgR"><h2>Solicitudes de corrección</h2><p class="hint">Un capturista pidió cambiar un campo que solo los administradores modifican. No se aplica nada hasta que pulses "Aplicar".</p><p id="corrAdmMsg" class="err"></p><div id="corrLista"></div><div class="end"><button type="button" class="btn" data-close>Cerrar</button></div></dialog>
 <dialog id="dlgN"><h2>Novedades del sitio</h2><div class="nov2"><div id="novA"></div><div><label>Comparar con<select id="novSel"></select></label><div id="novB"></div></div></div><div class="end"><button class="btn" data-close>Entendido</button></div></dialog>
 <dialog id="dlgS"><h2>Solicitudes de acceso</h2><div id="solList"></div><div class="end"><button class="btn ghost" data-close>Cerrar</button></div></dialog>
 
@@ -68,6 +78,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="ayuda.js?v=20261030b"></script>
-<script src="novedades.js?v=20261030b"></script>
-<script src="app.js?v=20261030b"></script></body></html>
+<script src="ayuda.js?v=20261031a"></script>
+<script src="novedades.js?v=20261031a"></script>
+<script src="app.js?v=20261031a"></script></body></html>

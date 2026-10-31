@@ -1,12 +1,12 @@
 // 1) Pega aquí la configuración de tu proyecto Firebase (ver LEEME.txt)
-  const firebaseConfig = {
-    apiKey: "AIzaSyCUgQdNjvUAhDx7oPKPZE6FEnUMUuC4l70",
-    authDomain: "hmivg-exp-35057.firebaseapp.com",
-    projectId: "hmivg-exp-35057",
-    storageBucket: "hmivg-exp-35057.firebasestorage.app",
-    messagingSenderId: "882677479294",
-    appId: "1:882677479294:web:af21c735f53d8153aa252f",
-    measurementId: "G-9Y54VE2T85"
+const firebaseConfig = {
+  apiKey: "AIzaSyCUgQdNjvUAhDx7oPKPZE6FEnUMUuC4l70",
+  authDomain: "hmivg-exp-35057.firebaseapp.com",
+  projectId: "hmivg-exp-35057",
+  storageBucket: "hmivg-exp-35057.firebasestorage.app",
+  messagingSenderId: "882677479294",
+  appId: "1:882677479294:web:af21c735f53d8153aa252f",
+  measurementId: "G-9Y54VE2T85"
 };
 firebase.initializeApp(firebaseConfig);
 // 2) App Check con reCAPTCHA v3: pega aquí la CLAVE PÚBLICA (site key) de reCAPTCHA v3 (ver LEEME.txt)
@@ -14,7 +14,7 @@ const RECAPTCHA_SITE_KEY="TU_CLAVE_RECAPTCHA_V3";
 if(['localhost','127.0.0.1'].includes(location.hostname))self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
 if(!RECAPTCHA_SITE_KEY.startsWith('TU_'))firebase.appCheck().activate(RECAPTCHA_SITE_KEY,true);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261030b';
+const VERSION='20261031a';
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 const falla=e=>{console.error('Error:',e&&e.code||'desconocido');return e&&e.code==='permission-denied'?'No tienes permiso para realizar esta acción.':'No se pudo completar la operación. Intenta de nuevo.'};
 /* Registro de actividad (solo se escribe; las reglas impiden modificarlo o borrarlo) */
@@ -84,7 +84,7 @@ $$('.salir').forEach(b=>b.onclick=()=>auth.signOut());
 auth.onAuthStateChanged(u=>{unsub&&unsub();
  if(!u){perfil=null;lista=[];editando=null;clearTimeout(idle);$('#rows').innerHTML='';$$('dialog').forEach(d=>d.open&&d.close());F.reset();$('#authForm').hidden=false;$('#pend').hidden=true;return show('landing')}
  unsub=db.doc('users/'+u.uid).onSnapshot(s=>{perfil=s.data()||{};
-  if(perfil.aprobado){reiniciar();show('app');$('#quien').textContent=u.email;$('#adm').hidden=$('#hint').hidden=perfil.rol!=='admin';buscar();tutorialInicial()}
+  if(perfil.aprobado){reiniciar();show('app');$('#quien').textContent=u.email;$('#adm').hidden=$('#hint').hidden=perfil.rol!=='admin';$('#btnMis').hidden=esAdmin();badgeCorr();buscar();tutorialInicial()}
   else{show('auth');$('#authForm').hidden=true;$('#pend').hidden=false}})});
 
 /* ---------- Búsqueda ---------- */
@@ -118,7 +118,7 @@ function aplicarTipo(){const est=F.tipo.value==='EXP-EST',C=F.elements.caso;$$('
 F.tipo.onchange=aplicarTipo;
 function abrir(x){editando=x||null;F.reset();if(x)for(const[k,v]of Object.entries(x))if(F.elements[k]&&typeof v==='string')F.elements[k].value=v;
  F.carnet.value=carnetN(x&&x.carnet);F.tipo.value=x?(x.tipo||'EXP-GN'):seccion;F.tipo.disabled=!!x&&!esAdmin();F.numero.readOnly=!!x&&!esAdmin();const A=$('#apertura'),ed=!!x&&esAdmin()&&!!x.fechaApertura;A.readOnly=!ed;A.type=ed?'datetime-local':'text';A.step=1;
- if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();aplicarTipo();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent=x?avisoFechas(x):'';tick();if(x)audit('read',COL[x.tipo||'EXP-GN']+'/'+x._id,{seccion:x.tipo||'EXP-GN'});
+ if(ed){const d=x.fechaApertura.toDate();A.value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19)}$('#borrar').hidden=!(x&&esAdmin());$('#solCorr').hidden=!(x&&!esAdmin());F.curp.oninput();F.fechaNacimiento.oninput();aplicarTipo();for(const n of['fechaNacimiento','sexo','domicilio','telefono'])F[n].required=!x;if(x&&!x.fechaNacimiento&&x.edad)$('#edadV').value=x.edad+' años';$('#fmsg').textContent=x?avisoFechas(x):'';tick();if(x)audit('read',COL[x.tipo||'EXP-GN']+'/'+x._id,{seccion:x.tipo||'EXP-GN'});
  $('#dlgT').textContent=x?'Editar expediente':'Nuevo expediente';$('#dlg').showModal()}
 $('#nuevo').onclick=()=>abrir();$('#cerrar').onclick=()=>$('#dlg').close();
 F.onsubmit=async e=>{e.preventDefault();const raw=Object.fromEntries(new FormData(F));if(editando&&!esAdmin())raw.tipo=editando.tipo||'EXP-GN';
@@ -251,3 +251,61 @@ const CAMPOS_AYUDA={numero:'numero',tipo:'tipo',nombre:'nombre',fechaNacimiento:
 const ponerQ=(el,k)=>{const b=document.createElement('button');b.type='button';b.className='q';b.textContent='?';b.title='Ayuda sobre este campo';b.setAttribute('aria-label','Ayuda sobre este campo');b.onclick=()=>ayuda('cam',k);el.closest('label').appendChild(b)};
 for(const[n,k]of Object.entries(CAMPOS_AYUDA))ponerQ(F.elements[n],k);
 ponerQ($('#apertura'),'apertura');ponerQ($('#edadV'),'edad');
+
+/* ---------- Solicitudes de corrección: el capturista las pide, el administrador decide ---------- */
+const CORR_CAMPOS={numero:'Número de expediente',tipo:'Tipo de expediente',apertura:'Fecha y hora de apertura'};
+const fechaHora=ms=>{const d=new Date(ms);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,19).replace('T',' ')};
+const valorActual=(x,c)=>c==='numero'?x.numero:c==='tipo'?(x.tipo||'EXP-GN'):(x.fechaApertura?fechaHora(x.fechaApertura.toMillis()):'');
+const porFecha=(a,b)=>(b.creadaEn?b.creadaEn.toMillis():0)-(a.creadaEn?a.creadaEn.toMillis():0);
+const COR=()=>db.collection('correcciones');
+const ESTADO={pendiente:['Pendiente','t'],aprobada:['Aprobada','a'],rechazada:['Rechazada','p']};
+const tarjetaCorr=(s,adm)=>`<section class="nov"><h3>${esc(s.seccion)} · ${esc(s.numero)}<span class="tag ${(ESTADO[s.estado]||['','t'])[1]}">${esc((ESTADO[s.estado]||[''])[0])}</span></h3><p class="hint">${esc(CORR_CAMPOS[s.campo]||s.campo)}${s.creadaEn?' · '+fechaHora(s.creadaEn.toMillis()):''}${adm?' · '+esc(s.solicitanteEmail||''):''}</p><p><b>${esc(s.valorActual)}</b> → <b>${esc(s.valorNuevo)}</b></p><p class="hint">Motivo: ${esc(s.motivo)}</p>${s.notaAdmin?`<p class="hint">Respuesta del administrador: ${esc(s.notaAdmin)}</p>`:''}${adm&&s.estado==='pendiente'?`<div class="corr-acc" data-id="${esc(s._id)}"><input class="nota" placeholder="Nota (opcional)" maxlength="200"><button type="button" class="btn sm" data-a="aplicar">Aplicar</button><button type="button" class="btn ghost sm" data-a="rechazar">Rechazar</button></div>`:''}</section>`;
+const misCorrecciones=async()=>(await COR().where('solicitante','==',auth.currentUser.uid).get()).docs.map(d=>({...d.data(),_id:d.id})).sort(porFecha);
+const pendientes=async()=>(await COR().where('estado','==','pendiente').get()).docs.map(d=>({...d.data(),_id:d.id})).sort((a,b)=>-porFecha(a,b));
+
+/* Capturista: crear la solicitud (siempre por acción explícita) */
+function corrCampoCambio(){const c=$('#corrCampo').value;$('#corrActual').value=valorActual(editando,c);
+ $('#corrNum').hidden=c!=='numero';$('#corrTipo').hidden=c!=='tipo';$('#corrApe').hidden=c!=='apertura';$('#corrNum').value='';$('#corrApe').value='';$('#corrTipo').value=(editando.tipo||'EXP-GN')==='EXP-GN'?'EXP-EST':'EXP-GN'}
+$('#solCorr').onclick=()=>{if(!editando||esAdmin())return;$('#corrCampo').value='numero';corrCampoCambio();$('#corrMotivo').value='';$('#corrMsg').textContent='';$('#dlgC').showModal()};
+$('#corrCampo').onchange=corrCampoCambio;
+$('#corrForm').onsubmit=async e=>{e.preventDefault();const m=$('#corrMsg');m.textContent='';if(!editando||esAdmin())return;
+ const c=$('#corrCampo').value,act=valorActual(editando,c),motivo=$('#corrMotivo').value.trim(),sec=editando.tipo||'EXP-GN';
+ let nv=c==='numero'?$('#corrNum').value.trim():c==='tipo'?$('#corrTipo').value:$('#corrApe').value;
+ if(c==='apertura'&&nv){if(nv.length===16)nv+=':00';nv=nv.replace('T',' ')}
+ if(c==='numero'&&!RX_NUM.test(nv))return m.textContent='El número debe tener el formato XX-XXXXX.';
+ if(c==='apertura'&&(!nv||isNaN(new Date(nv.replace(' ','T')))))return m.textContent='Indica una fecha y hora válidas.';
+ if(nv===act)return m.textContent='El valor solicitado es igual al actual.';
+ if(!motivo)return m.textContent='Explica el motivo de la corrección.';
+ try{if((await misCorrecciones()).some(r=>r.estado==='pendiente'&&r.numero===editando.numero&&r.seccion===sec&&r.campo===c))return m.textContent='Ya enviaste una solicitud pendiente para este campo.';
+  const u=auth.currentUser,ref=await COR().add({solicitante:u.uid,solicitanteEmail:u.email,seccion:sec,numero:editando.numero,campo:c,valorActual:act,valorNuevo:nv,motivo:motivo.slice(0,300),estado:'pendiente',creadaEn:TS()});
+  audit('create','correcciones/'+ref.id,{seccion:sec,campos:[c]});$('#dlgC').close();$('#fmsg').textContent='Solicitud enviada. Un administrador la revisará; puedes ver su estado en "Mis correcciones".'}
+ catch(err){m.textContent=falla(err)}};
+$('#btnMis').onclick=async()=>{const L=$('#misLista');L.innerHTML='<p class="hint">Cargando…</p>';$('#dlgM').showModal();
+ try{const r=(await misCorrecciones()).slice(0,30);L.innerHTML=r.length?r.map(x=>tarjetaCorr(x,false)).join(''):'<p class="hint">Aún no has enviado solicitudes.</p>'}catch(err){L.innerHTML='<p class="err">'+esc(falla(err))+'</p>'}};
+
+/* Administrador: revisar, aplicar o rechazar */
+async function badgeCorr(){if(!esAdmin())return;try{const n=(await pendientes()).length,p=$('#corrPunto');p.hidden=!n;p.textContent=n>9?'9+':String(n)}catch(e){console.error('Error:',e&&e.code||'desconocido')}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)badgeCorr()});
+async function listarCorr(){const L=$('#corrLista');try{const r=await pendientes();L.innerHTML=r.length?r.map(x=>tarjetaCorr(x,true)).join(''):'<p class="hint">No hay solicitudes pendientes.</p>'}catch(err){L.innerHTML='<p class="err">'+esc(falla(err))+'</p>'}badgeCorr()}
+$('#btnCorr').onclick=async()=>{if(!esAdmin())return;$('#corrAdmMsg').textContent='';$('#corrLista').innerHTML='<p class="hint">Cargando…</p>';$('#dlgR').showModal();await listarCorr()};
+async function aplicarCorreccion(s){const t=s.seccion==='EXP-EST'?'EXP-EST':'EXP-GN',ref=col(t).doc(s.numero),snap=await ref.get();
+ if(!snap.exists)return'El expediente ya no existe con ese número en esa sección.';
+ const x={...snap.data(),_id:snap.id},base={actualizado:TS(),editor:auth.currentUser.email},{_id,...orig}=x;
+ if(valorActual(x,s.campo)!==s.valorActual)return'El valor actual cambió desde que se hizo la solicitud. Recházala y pide que se envíe de nuevo.';
+ if(s.campo==='apertura'){const dt=new Date(String(s.valorNuevo).replace(' ','T'));if(isNaN(dt))return'La fecha solicitada no es válida.';
+  await ref.update({...base,fechaApertura:firebase.firestore.Timestamp.fromDate(dt)});audit('update',COL[t]+'/'+s.numero,{seccion:t,campos:['fechaApertura'],origen:'solicitud'});return null}
+ if(s.campo==='numero'){if(!RX_NUM.test(s.valorNuevo))return'El número solicitado no tiene el formato XX-XXXXX.';if(await existe(t,s.valorNuevo))return'Ya existe ese número en la sección '+t+'.';
+  const b=db.batch();b.set(col(t).doc(s.valorNuevo),{...orig,...base,numero:s.valorNuevo});b.delete(ref);await b.commit();audit('update',COL[t]+'/'+s.valorNuevo,{seccion:t,campos:['numero'],origen:'solicitud'});return null}
+ if(s.campo==='tipo'){const n=s.valorNuevo;if(!COL[n]||n===t)return'El tipo solicitado no es válido.';if(await existe(n,s.numero))return'Ya existe ese número en la sección '+n+'.';
+  if(n==='EXP-EST'&&!confirm('Al pasar a EXP-EST se descartan código mater, defunción, ingreso, egreso y los casos distintos de Z21. ¿Continuar?'))return'Cambio cancelado.';
+  const b=db.batch();b.set(col(n).doc(s.numero),{...limpiar({...orig,tipo:n}),...base,listaKey:lk(n,tiempo(x))});b.delete(ref);await b.commit();audit('update',COL[n]+'/'+s.numero,{seccion:n,campos:['tipo'],origen:'solicitud'});return null}
+ return'Campo no reconocido.'}
+$('#corrLista').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b||!esAdmin())return;const w=b.closest('.corr-acc'),id=w.dataset.id,nota=w.querySelector('.nota').value.trim().slice(0,200),msg=$('#corrAdmMsg');msg.textContent='';
+ w.querySelectorAll('button').forEach(x=>x.disabled=true);
+ try{const sn=await COR().doc(id).get();if(!sn.exists||sn.data().estado!=='pendiente'){await listarCorr();return}
+  const aplicar=b.dataset.a==='aplicar';
+  if(aplicar){const er=await aplicarCorreccion({...sn.data(),_id:id});if(er){msg.textContent=er;w.querySelectorAll('button').forEach(x=>x.disabled=false);return}}
+  const estado=aplicar?'aprobada':'rechazada',u=auth.currentUser;
+  await COR().doc(id).update({estado,resueltaPor:u.uid,resueltaPorEmail:u.email,resueltaEn:TS(),notaAdmin:nota});
+  audit('update','correcciones/'+id,{campos:['estado'],resultado:estado});await listarCorr();buscar()}
+ catch(err){msg.textContent=falla(err);w.querySelectorAll('button').forEach(x=>x.disabled=false)}};
