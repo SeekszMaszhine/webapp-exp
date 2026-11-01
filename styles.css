@@ -62,3 +62,4 @@ textarea{font:1rem -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,"Helveti
 textarea:focus{border-color:var(--vino);box-shadow:0 0 0 4px rgba(114,32,52,.14);outline:none}
 .corr-acc{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.7rem}.corr-acc .nota{flex:1;min-width:150px;padding:.45rem .7rem}
 .nov h3 .tag{margin-left:.4rem;vertical-align:middle}
+a.btn,a.logo{text-decoration:none}

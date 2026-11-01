@@ -2,6 +2,11 @@
    La versión más nueva va primero y debe coincidir con VERSION de app.js.
    Al publicar una versión nueva, agrega arriba una entrada: { v, fecha, cambios:[...] } */
 const NOVEDADES=[
+{v:'20261031b',fecha:'31 oct 2026',cambios:[
+ 'Nueva agenda de citas, en una página aparte (botón "Agenda", arriba): servicios con sus turnos y horarios cada 20 minutos desde las 8:00.',
+ 'Se agenda con el número de expediente y el nombre; el nombre se completa solo al escribir el número, o se captura a mano.',
+ 'Capturistas y administradores ven qué servicios tienen citas y qué horarios están ocupados. Los capturistas piden cambios o cancelaciones a un administrador; los administradores los hacen directamente.',
+ 'Impresión del historial semanal de citas por servicio.']},
 {v:'20261031a',fecha:'31 oct 2026',cambios:[
  'Los capturistas pueden solicitar la corrección de los campos que solo cambia un administrador (número de expediente, tipo y fecha de apertura) con el botón "Solicitar corrección", dentro del expediente.',
  'Los administradores revisan las solicitudes en "Correcciones" (con aviso de pendientes) y deciden si aplicarlas o rechazarlas; nada cambia solo.',

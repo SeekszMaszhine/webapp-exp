@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HMIVG | ARCHIVO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=20261031b"><link rel="stylesheet" href="agenda.css?v=20261031b"></head><body>
+
+<section id="cargando" class="view"><p class="hint" style="padding:2rem">Cargando…</p></section>
+<section id="sinAcceso" class="view" hidden><div class="card"><b class="logo">Agenda</b><h2>Acceso del personal</h2><p>La agenda es solo para personal autorizado. Inicia sesión en el sitio de expedientes y vuelve aquí.</p><a class="btn" href="index.html">Ir a iniciar sesión</a></div></section>
+
+<section id="ag" class="view" hidden>
+<header class="nav"><a class="logo" href="index.html">HMI VG | ARCHIVO CLINICO</a><div class="who"><span id="quien"></span><a class="btn ghost sm" href="index.html">← Expedientes</a><button class="btn ghost sm" id="btnSolAg">Solicitudes<span id="solPunto" class="punto" hidden></span></button><button class="btn ghost sm" id="btnSalir">Salir</button></div></header>
+<main class="wrap">
+<div class="bar"><div class="fechas"><button class="btn ghost sm" id="diaAnt" aria-label="Día anterior">‹</button><input type="date" id="fecha" aria-label="Fecha"><button class="btn ghost sm" id="diaSig" aria-label="Día siguiente">›</button><button class="btn ghost sm" id="hoy">Hoy</button></div>
+<div class="acts"><button class="btn ghost" id="btnImp">Imprimir historial semanal</button></div></div>
+<h2 id="fechaTxt" class="fechatxt"></h2>
+<div id="resumen" class="svcs"></div>
+<div class="tabs sec" id="turnos"></div>
+<div class="tw" id="slots"></div>
+<p class="hint">Los horarios ocupados se ven en rojo vino. Una cita agendada solo la modifican los administradores; si necesitas un cambio, pulsa "Solicitar cambio".</p>
+</main></section>
+
+<dialog id="dlgCita"><form id="fCita"><h2 id="cTit"></h2><p class="hint" id="cInfo"></p>
+<div class="grid">
+<label id="cFL">Fecha<input type="date" id="cFecha"></label>
+<label id="cTL">Turno<select id="cTurno"></select></label>
+<label id="cHL">Hora<select id="cHora"></select></label>
+<label>Número de expediente<input id="cNum" placeholder="XX-XXXXX" pattern="\d{2}-\d{5}" maxlength="8" required autocomplete="off"></label>
+<label class="w2">Nombre del paciente<input id="cNom" maxlength="150" required autocomplete="off"></label>
+</div>
+<p class="hint" id="cSug"></p>
+<label id="cML" hidden>Motivo del cambio<textarea id="cMot" rows="2" maxlength="300"></textarea></label>
+<p id="cMsg" class="err"></p>
+<div class="end"><button type="button" class="btn ghost danger" id="cDel" hidden></button><button type="button" class="btn ghost" data-close>Cerrar</button><button class="btn" id="cOk">Agendar</button></div></form></dialog>
+
+<dialog id="dlgSol"><h2 id="sTit">Solicitudes</h2><label id="sVerL" hidden>Mostrar<select id="sVer"><option value="pendiente">Pendientes</option><option value="resuelta">Resueltas</option></select></label><p id="sMsg" class="err"></p><div id="sLista"></div><div class="end"><button type="button" class="btn" data-close>Cerrar</button></div></dialog>
+
+<dialog id="dlgImp"><h2>Imprimir historial semanal</h2><div class="grid"><label>Servicio<select id="iSvc"></select></label><label>Semana que incluye el día<input type="date" id="iFecha"></label></div>
+<p class="hint" id="iRango"></p><p class="hint">La impresión contiene nombres y números de expediente: manéjala conforme a la normativa del hospital.</p><p id="iMsg" class="err"></p>
+<div class="end"><button type="button" class="btn ghost" data-close>Cerrar</button><button type="button" class="btn" id="iGo">Imprimir</button></div></dialog>
+
+<div id="imprimible" class="ip"></div><div id="aviso" class="aviso" role="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js?v=20261031b"></script>
+<script src="agenda.js?v=20261031b"></script></body></html>

@@ -1,20 +1,9 @@
-// 1) Pega aquí la configuración de tu proyecto Firebase (ver LEEME.txt)
-const firebaseConfig = {
-  apiKey: "AIzaSyCUgQdNjvUAhDx7oPKPZE6FEnUMUuC4l70",
-  authDomain: "hmivg-exp-35057.firebaseapp.com",
-  projectId: "hmivg-exp-35057",
-  storageBucket: "hmivg-exp-35057.firebasestorage.app",
-  messagingSenderId: "882677479294",
-  appId: "1:882677479294:web:af21c735f53d8153aa252f",
-  measurementId: "G-9Y54VE2T85"
-};
+/* La configuración (firebaseConfig y RECAPTCHA_SITE_KEY) está en config.js */
 firebase.initializeApp(firebaseConfig);
-// 2) App Check con reCAPTCHA v3: pega aquí la CLAVE PÚBLICA (site key) de reCAPTCHA v3 (ver LEEME.txt)
-const RECAPTCHA_SITE_KEY="TU_CLAVE_RECAPTCHA_V3";
 if(['localhost','127.0.0.1'].includes(location.hostname))self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
 if(!RECAPTCHA_SITE_KEY.startsWith('TU_'))firebase.appCheck().activate(RECAPTCHA_SITE_KEY,true);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261031a';
+const VERSION='20261031b';
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 const falla=e=>{console.error('Error:',e&&e.code||'desconocido');return e&&e.code==='permission-denied'?'No tienes permiso para realizar esta acción.':'No se pudo completar la operación. Intenta de nuevo.'};
 /* Registro de actividad (solo se escribe; las reglas impiden modificarlo o borrarlo) */

@@ -3,7 +3,7 @@
 <title>HMIVG | ARCHIVO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261031a"></head><body>
+<link rel="stylesheet" href="styles.css?v=20261031b"></head><body>
 
 <section id="landing" class="view">
 <header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><button class="btn ghost" data-go="auth">Ingresar</button></header>
@@ -23,7 +23,7 @@
 <button class="link" data-go="landing">Volver al inicio</button></div></section>
 
 <section id="app" class="view" hidden>
-<header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><div class="who"><span id="quien"></span><button class="btn ghost sm" id="btnNov" hidden>Novedades<span class="dot" id="novDot" hidden title="Hay una versión nueva" aria-label="Hay una versión nueva"></span></button><button class="btn ghost sm" id="btnMis" hidden>Mis correcciones</button><button class="btn ghost sm" id="btnAyuda">Ayuda</button><button class="btn ghost sm salir">Salir</button></div></header>
+<header class="nav"><b class="logo">HMI VG | ARCHIVO CLINICO</b><div class="who"><span id="quien"></span><a class="btn ghost sm" href="agenda.html">Agenda</a><button class="btn ghost sm" id="btnNov" hidden>Novedades<span class="dot" id="novDot" hidden title="Hay una versión nueva" aria-label="Hay una versión nueva"></span></button><button class="btn ghost sm" id="btnMis" hidden>Mis correcciones</button><button class="btn ghost sm" id="btnAyuda">Ayuda</button><button class="btn ghost sm salir">Salir</button></div></header>
 <main class="wrap">
 <div class="bar"><form id="busq"><input id="q" type="search" placeholder="Número, nombre o CURP completa"><button class="btn">Buscar</button></form>
 <div class="acts"><button class="btn" id="nuevo">Nuevo expediente</button><span id="adm" hidden><label class="btn ghost">Importar Excel/CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="btnDesc">Descargar sección</button><button class="btn ghost" id="btnCorr">Correcciones<span id="corrPunto" class="punto" hidden></span></button><button class="btn ghost" id="btnMig">Migrar datos</button><button class="btn ghost" id="btnSol">Solicitudes</button></span></div></div>
@@ -78,6 +78,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="ayuda.js?v=20261031a"></script>
-<script src="novedades.js?v=20261031a"></script>
-<script src="app.js?v=20261031a"></script></body></html>
+<script src="config.js?v=20261031b"></script>
+<script src="ayuda.js?v=20261031b"></script>
+<script src="novedades.js?v=20261031b"></script>
+<script src="app.js?v=20261031b"></script></body></html>
