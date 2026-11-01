@@ -3,7 +3,7 @@ firebase.initializeApp(firebaseConfig);
 if(['localhost','127.0.0.1'].includes(location.hostname))self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
 if(!RECAPTCHA_SITE_KEY.startsWith('TU_'))firebase.appCheck().activate(RECAPTCHA_SITE_KEY,true);
 const auth=firebase.auth(),db=firebase.firestore(),TS=firebase.firestore.FieldValue.serverTimestamp;
-const VERSION='20261031b';
+const VERSION='20261101a';
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 const falla=e=>{console.error('Error:',e&&e.code||'desconocido');return e&&e.code==='permission-denied'?'No tienes permiso para realizar esta acción.':'No se pudo completar la operación. Intenta de nuevo.'};
 /* Registro de actividad (solo se escribe; las reglas impiden modificarlo o borrarlo) */

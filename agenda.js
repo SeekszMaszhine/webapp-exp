@@ -28,6 +28,7 @@ const aviso=t=>{const a=$('#aviso');a.textContent=t;a.classList.add('on');setTim
 
 let perfil=null,unPerfil,unCitas,citas=[],fecha=iso(new Date()),svc=Object.keys(SERV)[0],turno=SERV[svc].t[0],modo='nueva',actual=null,slot=null,autoNom=false;
 const esAdmin=()=>!!perfil&&perfil.rol==='admin';
+const svcDlg=()=>modo==='nueva'?(slot&&slot.servicio):(actual&&actual.servicio); /* servicio de la cita del diálogo abierto */
 const show=id=>$$('.view').forEach(v=>v.hidden=v.id!==id);
 
 /* ---------- Acceso ---------- */
@@ -71,18 +72,18 @@ $('#cTurno').onchange=()=>llenarHoras($('#cTurno').value,$('#cHora').value);
 function dlg(m,tit,ok,fijo){modo=m;autoNom=false;$('#cTit').textContent=tit;$('#cOk').textContent=ok;$('#cMsg').textContent='';$('#cSug').textContent='';
  ['#cFL','#cTL','#cHL'].forEach(s=>$(s).hidden=fijo);$('#cML').hidden=m!=='solicitud';$('#cMot').value='';$('#cDel').hidden=m==='nueva';$('#cDel').textContent=m==='admin'?'Cancelar cita':'Solicitar cancelación'}
 function abrirNueva(h){slot={servicio:svc,turno,fecha,hora:h};actual=null;dlg('nueva','Agendar cita','Agendar',true);
- $('#cInfo').textContent=`${SERV[svc].n} · ${TURNO[turno].n} · ${diaTxt(fecha)} · ${h}`;$('#cNum').value='';$('#cNom').value='';$('#dlgCita').showModal();$('#cNum').focus()}
+ $('#cInfo').textContent=`${SERV[svc].n} · ${TURNO[turno].n} · ${diaTxt(fecha)} · ${h}`+(svc==='estomatologia'?' · Solo expedientes de Estomatología (EXP-EST)':'');$('#cNum').value='';$('#cNom').value='';$('#dlgCita').showModal();$('#cNum').focus()}
 function abrirGestion(c){actual=c;dlg(esAdmin()?'admin':'solicitud',esAdmin()?'Gestionar cita':'Solicitar cambio en la cita',esAdmin()?'Guardar cambios':'Enviar solicitud',false);
- $('#cInfo').textContent=`${SERV[c.servicio].n} · ${diaTxt(c.fecha)} · ${c.hora}`+(esAdmin()?'':' · Solo un administrador puede modificarla: describe el cambio y el motivo.');
+ $('#cInfo').textContent=`${SERV[c.servicio].n} · ${diaTxt(c.fecha)} · ${c.hora}`+(c.servicio==='estomatologia'?' · Solo expedientes de Estomatología (EXP-EST)':'')+(esAdmin()?'':' · Solo un administrador puede modificarla: describe el cambio y el motivo.');
  $('#cFecha').value=c.fecha;$('#cTurno').innerHTML=SERV[c.servicio].t.map(t=>`<option value="${t}">${esc(TURNO[t].n)}</option>`).join('');$('#cTurno').value=c.turno;llenarHoras(c.turno,c.hora);
  $('#cNum').value=c.numero;$('#cNom').value=c.nombre;$('#dlgCita').showModal()}
 
 /* Completar el nombre al escribir el número de expediente (también se puede escribir a mano) */
 $('#cNom').oninput=()=>{autoNom=false};
 $('#cNum').oninput=async()=>{const n=$('#cNum').value.trim(),sug=$('#cSug');sug.textContent='';if(!RX_NUM.test(n))return;
- try{const[g,e]=await Promise.all([db.doc('exp-gen/'+n).get(),db.doc('exp-den/'+n).get()]);if($('#cNum').value.trim()!==n)return;
+ try{const est=svcDlg()==='estomatologia',[g,e]=await Promise.all([est?Promise.resolve({exists:false}):db.doc('exp-gen/'+n).get(),db.doc('exp-den/'+n).get()]);if($('#cNum').value.trim()!==n)return;
   const r=[[g,'EXP-GN'],[e,'EXP-EST']].filter(([s])=>s.exists).map(([s,t])=>({t,nombre:s.data().nombre||''}));
-  if(!r.length){sug.textContent='No se encontró el expediente; captura el nombre a mano.';return}
+  if(!r.length){sug.textContent=est?'No existe un expediente de Estomatología (EXP-EST) con ese número. En esta agenda solo se pueden agendar expedientes de esa sección.':'No se encontró el expediente; captura el nombre a mano.';return}
   audit('read','agenda/consulta-expediente',{secciones:r.map(x=>x.t)});
   const poner=nom=>{$('#cNom').value=nom;autoNom=true};
   if(r.length===1){if(!$('#cNom').value.trim()||autoNom||modo==='nueva')poner(r[0].nombre);sug.textContent='Nombre completado desde '+r[0].t+'. Puedes corregirlo.'}
@@ -96,14 +97,15 @@ async function crearSolicitud(accion,c,n,motivo){const u=auth.currentUser;
  const r=await COL_S().add({accion,citaId:c.id,servicio:c.servicio,turno:c.turno,fecha:c.fecha,hora:c.hora,numero:c.numero,nombre:c.nombre,
   nTurno:n?n.turno:'',nFecha:n?n.fecha:'',nHora:n?n.hora:'',nNumero:n?n.numero:'',nNombre:n?n.nombre:'',motivo,estado:'pendiente',solicitante:u.uid,solicitanteEmail:u.email,creadaEn:TS()});
  audit('create','citas_solicitudes/'+r.id,{servicio:c.servicio,accion})}
-const ERR={ocupado:'Ese horario ya está ocupado.',falta:'La cita ya no existe.',dup:'Ya tienes una solicitud pendiente para esta cita.',estado:'Esta solicitud ya fue resuelta.',cambio:'La cita cambió desde que se hizo la solicitud. Recházala y pide que se envíe de nuevo.'};
+const ERR={noEst:'Ese número no corresponde a un expediente de Estomatología (EXP-EST). En la agenda de Estomatología solo se pueden agendar expedientes de esa sección.',ocupado:'Ese horario ya está ocupado.',falta:'La cita ya no existe.',dup:'Ya tienes una solicitud pendiente para esta cita.',estado:'Esta solicitud ya fue resuelta.',cambio:'La cita cambió desde que se hizo la solicitud. Recházala y pide que se envíe de nuevo.'};
 const bloquear=on=>$$('#fCita button').forEach(b=>b.disabled=on);
 $('#fCita').onsubmit=async e=>{e.preventDefault();const m=$('#cMsg');m.textContent='';
  const numero=$('#cNum').value.trim(),nombre=$('#cNom').value.trim().replace(/\s+/g,' ').toUpperCase().slice(0,150);
  if(!RX_NUM.test(numero))return m.textContent='El número debe tener el formato XX-XXXXX.';
  if(nombre.length<3)return m.textContent='Escribe el nombre del paciente.';
  bloquear(true);
- try{if(modo==='nueva'){await agendar({...slot,numero,nombre});$('#dlgCita').close();aviso('Cita agendada')}
+ try{if(svcDlg()==='estomatologia'&&(modo==='nueva'||numero!==actual.numero)&&!(await db.doc('exp-den/'+numero).get()).exists)throw{code:'noEst'};
+  if(modo==='nueva'){await agendar({...slot,numero,nombre});$('#dlgCita').close();aviso('Cita agendada')}
   else{const n={turno:$('#cTurno').value,fecha:$('#cFecha').value,hora:$('#cHora').value,numero,nombre};
    if(!n.fecha)return m.textContent='Indica la fecha.';
    const cambios=['turno','fecha','hora','numero','nombre'].some(k=>n[k]!==actual[k]);
@@ -135,6 +137,7 @@ async function resolverSol(id,aplicar,nota){const u=auth.currentUser,rs=db.doc('
  await db.runTransaction(async tx=>{const ss=await tx.get(rs);if(!ss.exists||ss.data().estado!=='pendiente')throw{code:'estado'};const s=ss.data();
   if(aplicar){const rc=db.doc('citas/'+s.citaId),sc=await tx.get(rc);if(!sc.exists)throw{code:'falta'};const c=sc.data();
    if(c.numero!==s.numero||c.fecha!==s.fecha||c.hora!==s.hora||c.turno!==s.turno)throw{code:'cambio'};
+   if(s.accion==='modificar'&&c.servicio==='estomatologia'&&s.nNumero!==c.numero&&!(await tx.get(db.doc('exp-den/'+s.nNumero))).exists)throw{code:'noEst'};
    if(s.accion==='cancelar')tx.delete(rc);
    else{const n={...c,turno:s.nTurno,fecha:s.nFecha,hora:s.nHora,numero:s.nNumero,nombre:s.nNombre,editadoPor:u.uid,editadoPorEmail:u.email,editadoEn:TS()},idN=idCita(c.servicio,n.fecha,n.turno,n.hora);
     if(idN===s.citaId)tx.update(rc,n);else{const rn=db.doc('citas/'+idN);if((await tx.get(rn)).exists)throw{code:'ocupado'};tx.set(rn,n);tx.delete(rc)}}}
@@ -160,6 +163,6 @@ $('#iGo').onclick=async()=>{const k=$('#iSvc').value,f=$('#iFecha').value,m=$('#
   const u=auth.currentUser,ahora=new Date().toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'});
   $('#imprimible').innerHTML=`<h1>Agenda de ${esc(SERV[k].n)}</h1><p>${esc(txt)} · ${r.length} ${r.length===1?'cita':'citas'}</p>`
    +(r.length?Object.keys(dias).sort().map(f=>`<h3>${esc(diaTxt(f))}</h3><table><thead><tr><th>Hora</th><th>Turno</th><th>Paciente</th><th>No. de expediente</th></tr></thead><tbody>${dias[f].map(c=>`<tr><td>${esc(c.hora)}</td><td>${esc((TURNO[c.turno]||{}).n||c.turno)}</td><td>${esc(c.nombre)}</td><td>${esc(c.numero)}</td></tr>`).join('')}</tbody></table>`).join(''):'<p>No hay citas agendadas esta semana.</p>')
-   +`<p style="margin-top:14pt">Impreso por ${esc(u.email)} el ${esc(ahora)}. Documento con datos de pacientes: manéjalo conforme a la normativa del hospital.</p>`;
+   +`<p style="margin-top:14pt">Impreso por ${esc(u.email)} el ${esc(ahora)}.</p>`;
   audit('print','agenda/'+k,{semana:l,registros:r.length});$('#dlgImp').close();setTimeout(()=>window.print(),150)}
  catch(err){m.textContent=falla(err)}};

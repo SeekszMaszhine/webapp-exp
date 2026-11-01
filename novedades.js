@@ -2,6 +2,9 @@
    La versión más nueva va primero y debe coincidir con VERSION de app.js.
    Al publicar una versión nueva, agrega arriba una entrada: { v, fecha, cambios:[...] } */
 const NOVEDADES=[
+{v:'20261101a',fecha:'1 nov 2026',cambios:[
+ 'La agenda de Estomatología solo acepta expedientes de Estomatología (EXP-EST) y completa los datos desde esa sección; no se pueden agendar expedientes de uso general.',
+ 'La impresión del historial semanal ya no incluye la leyenda sobre la normativa del hospital.']},
 {v:'20261031b',fecha:'31 oct 2026',cambios:[
  'Nueva agenda de citas, en una página aparte (botón "Agenda", arriba): servicios con sus turnos y horarios cada 20 minutos desde las 8:00.',
  'Se agenda con el número de expediente y el nombre; el nombre se completa solo al escribir el número, o se captura a mano.',
